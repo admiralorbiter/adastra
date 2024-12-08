@@ -92,6 +92,36 @@ def draw_ship(screen, ship):
         color = (0, 255, 0)  # Green for crew
         pygame.draw.circle(screen, color, (center_x, center_y), radius)
 
+    # Draw oxygen level indicator in bottom right
+    screen_width, screen_height = screen.get_size()
+    
+    # Define indicator dimensions and position
+    indicator_width = 200
+    indicator_height = 30
+    padding = 20
+    x = screen_width - indicator_width - padding
+    y = screen_height - indicator_height - padding
+    
+    # Draw background bar
+    bg_rect = pygame.Rect(x, y, indicator_width, indicator_height)
+    pygame.draw.rect(screen, (50, 50, 50), bg_rect)
+    
+    # Draw oxygen level
+    oxygen_width = int((indicator_width - 4) * (ship.global_oxygen / ship.oxygen_capacity))
+    oxygen_rect = pygame.Rect(x + 2, y + 2, oxygen_width, indicator_height - 4)
+    oxygen_color = (100, 200, 255)  # Light blue for oxygen
+    pygame.draw.rect(screen, oxygen_color, oxygen_rect)
+    
+    # Draw border
+    pygame.draw.rect(screen, (200, 200, 200), bg_rect, 2)
+    
+    # Draw text
+    font = pygame.font.Font(None, 24)
+    text = f"O₂: {int(ship.global_oxygen)}%"
+    text_surface = font.render(text, True, (255, 255, 255))
+    text_rect = text_surface.get_rect(midleft=(x + 10, y + indicator_height // 2))
+    screen.blit(text_surface, text_rect)
+
 def main():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))

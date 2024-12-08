@@ -6,6 +6,10 @@ class Ship:
         self.global_power = 0
         self.max_power = 0
         self.crew = []
+        
+        # New oxygen-related attributes
+        self.oxygen_capacity = 100.0  # Maximum oxygen the ship can hold
+        self.oxygen_consumption_per_crew = 0.1  # Oxygen used per crew member per second
 
     def add_deck(self, deck):
         self.decks.append(deck)
@@ -40,6 +44,22 @@ class Ship:
         self.global_oxygen += life_support_oxygen
         if self.global_oxygen > 100.0:
             self.global_oxygen = 100.0
+
+        # Calculate oxygen changes
+        total_oxygen_production = 0
+        total_oxygen_consumption = len(self.crew) * self.oxygen_consumption_per_crew
+
+        for deck in self.decks:
+            for room in deck.rooms:
+                for tile in room.tiles:
+                    if tile.module:
+                        mod = tile.module
+                        if hasattr(mod, 'oxygen_production'):
+                            total_oxygen_production += mod.oxygen_production
+
+        # Update oxygen levels
+        oxygen_change = (total_oxygen_production - total_oxygen_consumption)
+        self.global_oxygen = max(0.0, min(self.oxygen_capacity, self.global_oxygen + oxygen_change))
 
     def add_crew_member(self, crew_member):
         self.crew.append(crew_member)
