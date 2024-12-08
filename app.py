@@ -1,4 +1,5 @@
 import pygame
+from models.build import BuildUI
 from world.pathfinding import find_path
 from world.ship import Ship
 from world.deck import Deck
@@ -124,11 +125,12 @@ def draw_ship(screen, ship):
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((640, 480))
+    screen = pygame.display.set_mode((1280, 720))
     clock = pygame.time.Clock()
 
     ship = create_basic_ship()
     selected_crew = None  # Track selected crew member
+    build_ui = BuildUI(screen.get_width())
 
     running = True
     while running:
@@ -139,8 +141,19 @@ def main():
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
+
+                # Handle UI clicks first
+                if build_ui.handle_click((mouse_x, mouse_y)):
+                    continue
+                
                 grid_x = mouse_x // TILE_SIZE
                 grid_y = mouse_y // TILE_SIZE
+
+                # Handle build mode if active
+                current_item = build_ui.build_system.get_current_item()
+                if current_item and current_item.can_build(ship, grid_x, grid_y):
+                    # TODO: Implement actual building logic here
+                    continue
 
                 # Left click for selection
                 if event.button == 1:  
@@ -185,7 +198,8 @@ def main():
                     path_points.append((int(x * TILE_SIZE + TILE_SIZE // 2), 
                                      int(y * TILE_SIZE + TILE_SIZE // 2)))
                 pygame.draw.lines(screen, (255, 255, 0), False, path_points, 2)
-
+        build_ui.draw(screen)
+        
         pygame.display.flip()
 
     pygame.quit()
