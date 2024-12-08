@@ -14,13 +14,12 @@ class Ship:
         # Update all decks and recalculate resources
         for deck in self.decks:
             deck.update(dt)
-        self.calculate_resources()
         
-        # Update crew members
+        # Update crew members with dt parameter
         for crew_member in self.crew:
-            crew_member.update()
-            # Affect crew oxygen based on ship's oxygen level
-            crew_member.oxygen = min(crew_member.oxygen, self.global_oxygen)
+            crew_member.update(dt)
+            
+        self.calculate_resources()
 
     def calculate_resources(self):
         total_power = 0

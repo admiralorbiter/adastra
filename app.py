@@ -1,4 +1,5 @@
 import pygame
+from world.pathfinding import find_path
 from world.ship import Ship
 from world.deck import Deck
 from world.room import Room
@@ -97,6 +98,7 @@ def main():
     clock = pygame.time.Clock()
 
     ship = create_basic_ship()
+    selected_crew = None  # Track selected crew member
 
     running = True
     while running:
@@ -105,13 +107,55 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                grid_x = mouse_x // TILE_SIZE
+                grid_y = mouse_y // TILE_SIZE
+
+                # Left click for selection
+                if event.button == 1:  
+                    selected_crew = None
+                    for crew in ship.crew:
+                        if int(crew.x) == grid_x and int(crew.y) == grid_y:
+                            selected_crew = crew
+                            break
+
+                # Right click for movement (if crew selected)
+                elif event.button == 3 and selected_crew:  
+                    if (grid_x < ship.decks[0].width and 
+                        grid_y < ship.decks[0].height and 
+                        ship.decks[0].tiles[grid_y][grid_x].is_walkable()):
+                        start = (int(selected_crew.x), int(selected_crew.y))
+                        goal = (grid_x, grid_y)
+                        path = find_path(ship.decks[0], start, goal)
+                        if path:
+                            selected_crew.set_path(path)
 
         # Update game logic
+        for crew in ship.crew:
+            crew.update(dt)
         ship.update(dt)
 
         # Rendering
         screen.fill((0,0,0))
         draw_ship(screen, ship)
+        
+        # Draw selected crew highlight
+        if selected_crew:
+            center_x = int(selected_crew.x * TILE_SIZE + TILE_SIZE // 2)
+            center_y = int(selected_crew.y * TILE_SIZE + TILE_SIZE // 2)
+            radius = TILE_SIZE // 2
+            pygame.draw.circle(screen, (255, 255, 255), (center_x, center_y), radius, 2)
+
+            # Optionally draw the path
+            if selected_crew.move_path:
+                path_points = [(int(selected_crew.x * TILE_SIZE + TILE_SIZE // 2), 
+                              int(selected_crew.y * TILE_SIZE + TILE_SIZE // 2))]
+                for x, y in selected_crew.move_path:
+                    path_points.append((int(x * TILE_SIZE + TILE_SIZE // 2), 
+                                     int(y * TILE_SIZE + TILE_SIZE // 2)))
+                pygame.draw.lines(screen, (255, 255, 0), False, path_points, 2)
+
         pygame.display.flip()
 
     pygame.quit()
