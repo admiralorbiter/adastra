@@ -12,6 +12,19 @@ TILE_SIZE = 32
 
 def create_basic_ship():
     main_deck = Deck(width=10, height=10, name="Main Deck")
+    
+    # Initialize all tiles as floors by default
+    for y in range(main_deck.height):
+        for x in range(main_deck.width):
+            main_deck.tiles[y][x].wall = False
+    
+    # Add walls around the edges
+    for x in range(main_deck.width):
+        main_deck.tiles[0][x].wall = True  # Top wall
+        main_deck.tiles[main_deck.height-1][x].wall = True  # Bottom wall
+    for y in range(main_deck.height):
+        main_deck.tiles[y][0].wall = True  # Left wall
+        main_deck.tiles[y][main_deck.width-1].wall = True  # Right wall
 
     # Place modules and objects
     life_support = LifeSupportModule()
@@ -26,9 +39,9 @@ def create_basic_ship():
     storage = StorageContainer()
     main_deck.tiles[5][4].object = storage
 
-    # Simple one-room scenario: all tiles in one room
-    all_tiles = [tile for row in main_deck.tiles for tile in row]
-    room = Room(all_tiles)
+    # Create room from all non-wall tiles
+    room_tiles = [tile for row in main_deck.tiles for tile in row if not tile.wall]
+    room = Room(room_tiles)
     main_deck.rooms.append(room)
 
     ship = Ship(name="Player Ship")
@@ -151,8 +164,10 @@ def main():
 
                 # Handle build mode if active
                 current_item = build_ui.build_system.get_current_item()
-                if current_item and current_item.can_build(ship, grid_x, grid_y):
-                    # TODO: Implement actual building logic here
+                if current_item:
+                    if event.button == 1:  # Left click to build
+                        if current_item.can_build(ship, grid_x, grid_y):
+                            current_item.build(ship, grid_x, grid_y)
                     continue
 
                 # Left click for selection
@@ -182,6 +197,25 @@ def main():
         # Rendering
         screen.fill((0,0,0))
         draw_ship(screen, ship)
+
+        # Add preview for buildable tiles
+        current_item = build_ui.build_system.get_current_item()
+        if current_item:
+            deck = ship.decks[0]
+            for y in range(deck.height):
+                for x in range(deck.width):
+                    if current_item.can_build(ship, x, y):
+                        preview_rect = pygame.Rect(
+                            x * TILE_SIZE, y * TILE_SIZE,
+                            TILE_SIZE, TILE_SIZE
+                        )
+                        # Draw semi-transparent highlight
+                        s = pygame.Surface((TILE_SIZE, TILE_SIZE))
+                        s.set_alpha(128)
+                        s.fill((100, 200, 255))  # Light blue highlight
+                        screen.blit(s, preview_rect)
+                        # Draw border
+                        pygame.draw.rect(screen, (100, 200, 255), preview_rect, 1)
         
         # Draw selected crew highlight
         if selected_crew:

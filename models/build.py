@@ -21,9 +21,65 @@ class BuildableItem:
         if not ship.decks:
             return False
         deck = ship.decks[0]
+        
+        # If trying to build at the edge, allow it by expanding
+        if x == deck.width - 1 or y == deck.height - 1:
+            return True
+            
+        # Check basic bounds
         if not (0 <= x < deck.width and 0 <= y < deck.height):
             return False
+            
+        # For floors, check if there's an adjacent floor tile
+        if self.name == "Basic Floor":
+            # Skip if already a floor (not a wall)
+            if not deck.tiles[y][x].wall:
+                return False
+                
+            # Check adjacent tiles (up, down, left, right)
+            adjacent_coords = [
+                (x, y-1), (x, y+1),
+                (x-1, y), (x+1, y)
+            ]
+            
+            # Allow building if there's at least one adjacent floor
+            for adj_x, adj_y in adjacent_coords:
+                if (0 <= adj_x < deck.width and 
+                    0 <= adj_y < deck.height and 
+                    not deck.tiles[adj_y][adj_x].wall):
+                    return True
+                    
+            return False
+            
         return True
+
+    def build(self, ship, x: int, y: int) -> bool:
+        """Actually perform the building action"""
+        if not ship.decks:
+            return False
+            
+        deck = ship.decks[0]
+        
+        # Handle expansion if building at edges
+        if x == deck.width - 1:
+            ship.expand_deck("right")
+        if y == deck.height - 1:
+            ship.expand_deck("down")
+            
+        if not self.can_build(ship, x, y):
+            return False
+            
+        if self.name == "Basic Floor":
+            # Convert wall to floor
+            deck.tiles[y][x].wall = False
+            
+            # Update the room to include the new floor tile
+            if deck.rooms:  # Assuming we're working with the first/only room
+                deck.rooms[0].tiles.append(deck.tiles[y][x])
+            
+            return True
+            
+        return False
 
 class BuildCategory:
     def __init__(self, mode: BuildMode, items: list[BuildableItem]):
@@ -61,6 +117,8 @@ class BuildSystem:
         else:
             self.current_mode = mode
             self.active_category = self.categories.get(mode)
+            if self.active_category:
+                self.active_category.selected_item = self.active_category.items[0]
 
     def get_current_item(self) -> BuildableItem | None:
         if self.active_category:

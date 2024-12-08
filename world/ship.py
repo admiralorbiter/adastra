@@ -1,3 +1,6 @@
+from world.tile import Tile
+
+
 class Ship:
     def __init__(self, name="Unnamed Ship"):
         self.name = name
@@ -63,3 +66,27 @@ class Ship:
 
     def add_crew_member(self, crew_member):
         self.crew.append(crew_member)
+
+    def expand_deck(self, direction: str) -> None:
+        """Expand the deck in the specified direction"""
+        if not self.decks:
+            return
+            
+        deck = self.decks[0]
+        new_tiles = []
+        
+        if direction == "right":
+            # Add new column
+            for y in range(deck.height):
+                new_tile = Tile(x=deck.width, y=y)  # Use the new width as x coordinate
+                new_tile.wall = True  # Start as wall
+                deck.tiles[y].append(new_tile)
+            deck.width += 1
+            
+        elif direction == "down":
+            # Add new row
+            new_row = [Tile(x=x, y=deck.height) for x in range(deck.width)]  # Use new height as y coordinate
+            for tile in new_row:
+                tile.wall = True  # Start as wall
+            deck.tiles.append(new_row)
+            deck.height += 1
