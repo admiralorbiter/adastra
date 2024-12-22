@@ -154,6 +154,8 @@ class BuildUI:
                     )
                     y_pos += self.button_size + self.margin
 
+        self.highlight_color = (100, 200, 255, 128)  # Light blue with alpha
+
     def handle_click(self, pos: tuple[int, int]) -> bool:
         for mode, button in self.buttons.items():
             if button.is_clicked(pos):
@@ -194,6 +196,33 @@ class BuildUI:
             label_x = button.rect.right + 10
             label_y = button.rect.centery - label.get_height() // 2
             screen.blit(label, (label_x, label_y))
+
+        # Draw cable mode highlights if active
+        if self.build_system.current_mode == BuildMode.CABLE:
+            # Get mouse position and convert to grid coordinates
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            world_x, world_y = self.game_state.camera.screen_to_world(mouse_x, mouse_y)
+            grid_x = int(world_x / 32)
+            grid_y = int(world_y / 32)
+
+            # Only highlight if mouse is over valid grid position
+            if (0 <= grid_x < self.game_state.ship.decks[0].width and 
+                0 <= grid_y < self.game_state.ship.decks[0].height):
+                
+                # Convert grid position back to screen coordinates
+                screen_x, screen_y = self.game_state.camera.world_to_screen(grid_x * 32, grid_y * 32)
+                tile_size = int(32 * self.game_state.camera.zoom)
+                
+                # Create highlight surface with proper scaling
+                highlight = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)
+                highlight.fill(self.highlight_color)
+                screen.blit(highlight, (screen_x, screen_y))
+                
+                # Draw scaled border
+                border_width = max(1, int(self.game_state.camera.zoom))
+                pygame.draw.rect(screen, (100, 200, 255), 
+                               pygame.Rect(screen_x, screen_y, tile_size, tile_size), 
+                               border_width)
 
 class UIButton:
     def __init__(self, rect: pygame.Rect, text: str, icon_color: tuple[int, int, int], tooltip: str = ""):

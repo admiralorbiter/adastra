@@ -30,12 +30,18 @@ class CableSystem:
     
     def start_drag(self, x: int, y: int):
         """Start cable dragging operation"""
-        self.drag_start = (x, y)
-        self.preview_cables.clear()
+        # Ensure coordinates are valid before starting drag
+        if (0 <= x < self.ship.decks[0].width and 
+            0 <= y < self.ship.decks[0].height):
+            self.drag_start = (int(x), int(y))
+            self.preview_cables.clear()
     
     def update_drag(self, x: int, y: int):
         """Update cable preview during drag"""
         if self.drag_start:
+            # Clamp coordinates to deck bounds
+            x = max(0, min(int(x), self.ship.decks[0].width - 1))
+            y = max(0, min(int(y), self.ship.decks[0].height - 1))
             self.drag_end = (x, y)
             self._update_preview()
     

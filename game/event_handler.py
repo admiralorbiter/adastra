@@ -24,7 +24,11 @@ class EventHandler:
             if event.type == pygame.QUIT:
                 self.game_state.running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                self.handle_mouse_down(event)
+                if event.button in (4, 5):  # Mouse wheel up (4) or down (5)
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                    self.game_state.camera.adjust_zoom(event.button == 4, mouse_x, mouse_y)
+                else:
+                    self.handle_mouse_down(event)
             elif event.type == pygame.MOUSEBUTTONUP:
                 self.handle_mouse_up(event)
             elif event.type == pygame.MOUSEMOTION:
@@ -81,8 +85,11 @@ class EventHandler:
     def handle_mouse_motion(self, event):
         if self.game_state.cable_view_active:
             mouse_x, mouse_y = pygame.mouse.get_pos()
+            # Convert screen coordinates to world coordinates
             world_x, world_y = self.game_state.camera.screen_to_world(mouse_x, mouse_y)
-            grid_x, grid_y = world_x // TILE_SIZE, world_y // TILE_SIZE
+            # Convert world coordinates to grid coordinates
+            grid_x = int(world_x / TILE_SIZE)
+            grid_y = int(world_y / TILE_SIZE)
             self.game_state.cable_system.update_drag(grid_x, grid_y)
 
     def handle_mouse_up(self, event):
