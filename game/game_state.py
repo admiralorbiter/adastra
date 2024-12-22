@@ -14,13 +14,13 @@ class GameState:
         self.cable_view_active = False
 
     def initialize(self, screen_width, screen_height):
-        from models.build import BuildUI
         from world.camera import Camera
-        from world.ship import Ship
         from game.ship_builder import create_basic_ship
         from world.cables import CableSystem
         from rendering.cable_renderer import CableRenderer
-        
+        from rendering.build_ui import BuildUI
+        from world.ship import Ship
+
         self.screen = pygame.display.set_mode((screen_width, screen_height))
         self.clock = pygame.time.Clock()
         self.cable_system = CableSystem()

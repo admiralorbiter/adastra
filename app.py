@@ -4,6 +4,7 @@ from game.event_handler import EventHandler
 from rendering.ship_renderer import ShipRenderer
 from rendering.cable_renderer import CableRenderer
 from rendering.asset_loader import AssetLoader
+from rendering.resource_ui import ResourceUI
 
 def main():
     pygame.init()
@@ -16,6 +17,7 @@ def main():
     event_handler = EventHandler(game_state)
     ship_renderer = ShipRenderer()
     cable_renderer = CableRenderer()
+    resource_ui = ResourceUI()
 
     while game_state.running:
         dt = game_state.clock.tick(30) / 1000.0
@@ -57,6 +59,7 @@ def main():
         
         # Draw UI on top
         game_state.build_ui.draw(game_state.screen)
+        resource_ui.draw_oxygen_status(game_state.screen, game_state.ship, 20, 20)
         pygame.display.flip()
 
     pygame.quit()

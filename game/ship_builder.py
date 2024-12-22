@@ -42,6 +42,7 @@ def create_basic_ship(cable_system=None):
     ship = Ship(name="Player Ship")
     ship.add_deck(main_deck)
     ship.cable_system = cable_system
+    ship.calculate_oxygen_capacity()
 
     # Add initial crew members with positions
     engineer = CrewMember("Sarah Chen", Skill.ENGINEER)

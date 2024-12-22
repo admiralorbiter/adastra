@@ -17,6 +17,7 @@ class Ship:
 
     def add_deck(self, deck):
         self.decks.append(deck)
+        self.calculate_oxygen_capacity()
 
     def update(self, dt):
         # Update all decks and recalculate resources
@@ -48,8 +49,8 @@ class Ship:
 
         self.max_power = total_power
         self.global_oxygen += life_support_oxygen
-        if self.global_oxygen > 100.0:
-            self.global_oxygen = 100.0
+        if self.global_oxygen > self.oxygen_capacity:
+            self.global_oxygen = self.oxygen_capacity
 
         # Calculate oxygen changes
         total_oxygen_production = 0
@@ -89,6 +90,7 @@ class Ship:
             # Add wall tile
             deck.tiles[y][deck.width] = create_tile(deck.width, y, is_wall=True)
             deck.width += 1
+            self.calculate_oxygen_capacity()
             
         elif direction == "left" and y is not None:
             # Shift all x coordinates right
@@ -101,6 +103,7 @@ class Ship:
             # Add wall tile
             deck.tiles[y][0] = create_tile(0, y, is_wall=True)
             deck.width += 1
+            self.calculate_oxygen_capacity()
             
         elif direction == "down" and x is not None:
             # Add new row with proper tiles
@@ -109,6 +112,7 @@ class Ship:
             # Set wall tile
             deck.tiles[deck.height][x] = create_tile(x, deck.height, is_wall=True)
             deck.height += 1
+            self.calculate_oxygen_capacity()
             
         elif direction == "up" and x is not None:
             # Shift all y coordinates down
@@ -122,3 +126,15 @@ class Ship:
             # Set wall tile
             deck.tiles[0][x] = create_tile(x, 0, is_wall=True)
             deck.height += 1
+            self.calculate_oxygen_capacity()
+
+    def calculate_oxygen_capacity(self):
+        floor_tiles = 0
+        for deck in self.decks:
+            for y in range(deck.height):
+                for x in range(deck.width):
+                    if not deck.tiles[y][x].wall:
+                        floor_tiles += 1
+        # Each floor tile contributes to oxygen capacity
+        self.oxygen_capacity = floor_tiles * 10  # 10 units of O2 per floor tile
+        self.global_oxygen = self.oxygen_capacity  # Start with full O2
