@@ -64,11 +64,15 @@ def create_basic_ship():
 
     return ship
 
-def draw_ship(screen, ship, camera, selected_crew=None):
+def draw_ship(screen, ship, camera, selected_crew=None, build_ui=None):
     if not ship.decks:
         return
 
     deck = ship.decks[0]
+    
+    # Get current build item if in build mode
+    current_item = build_ui.build_system.get_current_item()
+
     for y in range(deck.height):
         for x in range(deck.width):
             tile = deck.tiles[y][x]
@@ -89,12 +93,23 @@ def draw_ship(screen, ship, camera, selected_crew=None):
                 elif isinstance(tile.object, StorageContainer):
                     color = (255, 255, 0)  # Yellow for storage
 
+            # Highlight valid build locations when in build mode
+            if current_item:
+                if current_item.can_build(ship, x, y):
+                    # Add a green tint to show valid build location
+                    r, g, b = color
+                    color = (min(255, r + 50), min(255, g + 100), b)
+
             # Use camera to convert world position to screen position
             screen_x, screen_y = camera.world_to_screen(x * TILE_SIZE, y * TILE_SIZE)
             rect = pygame.Rect(screen_x, screen_y, TILE_SIZE, TILE_SIZE)
             pygame.draw.rect(screen, color, rect)
-            # Optionally draw a grid line
-            pygame.draw.rect(screen, (0,0,0), rect, 1)
+            
+            # Draw valid build locations with a green outline
+            if current_item and current_item.can_build(ship, x, y):
+                pygame.draw.rect(screen, (0, 255, 0), rect, 2)
+            else:
+                pygame.draw.rect(screen, (0, 0, 0), rect, 1)
 
     # Draw crew members
     for crew_member in ship.crew:
@@ -150,6 +165,10 @@ def main():
     while running:
         dt = clock.tick(30) / 1000.0
 
+        # Add this section to update all crew members
+        for crew_member in ship.crew:
+            crew_member.update(dt)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -160,20 +179,40 @@ def main():
                 if build_ui.handle_click((mouse_x, mouse_y)):
                     continue
 
-                if event.button == 3:  # Right mouse button
-                    if not selected_crew:  # Only start panning if no crew selected
-                        camera.start_pan(mouse_x, mouse_y)
-                elif event.button == 1:  # Left mouse button
+                if event.button == 1:  # Left mouse button
                     # Convert screen coordinates to world coordinates
                     world_x, world_y = camera.screen_to_world(mouse_x, mouse_y)
                     grid_x, grid_y = world_x // TILE_SIZE, world_y // TILE_SIZE
                     
-                    # Handle selection
-                    selected_crew = None
-                    for crew in ship.crew:
-                        if int(crew.x) == grid_x and int(crew.y) == grid_y:
-                            selected_crew = crew
-                            break
+                    # If in build mode, handle building
+                    current_item = build_ui.build_system.get_current_item()
+                    if current_item and grid_x < ship.decks[0].width and grid_y < ship.decks[0].height:
+                        current_item.build(ship, grid_x, grid_y)
+                    else:
+                        # Check if clicking on a crew member
+                        clicked_on_crew = False
+                        for crew in ship.crew:
+                            if int(crew.x) == grid_x and int(crew.y) == grid_y:
+                                selected_crew = crew
+                                clicked_on_crew = True
+                                break
+                        
+                        # If we have a selected crew and didn't click on another crew,
+                        # try to move the selected crew
+                        if selected_crew and not clicked_on_crew:
+                            if (grid_x < ship.decks[0].width and 
+                                grid_y < ship.decks[0].height and 
+                                ship.decks[0].tiles[grid_y][grid_x].is_walkable()):
+                                start = (int(selected_crew.x), int(selected_crew.y))
+                                goal = (grid_x, grid_y)
+                                path = find_path(ship.decks[0], start, goal)
+                                if path:
+                                    selected_crew.set_path(path)
+                            
+                            # Deselect crew after setting path
+                            selected_crew = None
+                elif event.button == 3:  # Right mouse button
+                    camera.start_pan(mouse_x, mouse_y)
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 3:  # Right mouse button
@@ -183,23 +222,9 @@ def main():
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 camera.update_pan(mouse_x, mouse_y)
 
-            # Handle right-click movement for selected crew
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 3 and selected_crew:
-                world_x, world_y = camera.screen_to_world(mouse_x, mouse_y)
-                grid_x, grid_y = world_x // TILE_SIZE, world_y // TILE_SIZE
-                
-                if (grid_x < ship.decks[0].width and 
-                    grid_y < ship.decks[0].height and 
-                    ship.decks[0].tiles[grid_y][grid_x].is_walkable()):
-                    start = (int(selected_crew.x), int(selected_crew.y))
-                    goal = (grid_x, grid_y)
-                    path = find_path(ship.decks[0], start, goal)
-                    if path:
-                        selected_crew.set_path(path)
-
         # Rendering
         screen.fill((0,0,0))
-        draw_ship(screen, ship, camera, selected_crew)
+        draw_ship(screen, ship, camera, selected_crew, build_ui)
         build_ui.draw(screen)
         pygame.display.flip()
 
