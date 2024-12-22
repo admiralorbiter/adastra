@@ -16,9 +16,19 @@ class CableSystem:
         self.networks = []  # List of connected cable networks
         self.ship = None  # Reference to ship will be set later
     
+    def can_place_cable(self, x: int, y: int) -> bool:
+        """Check if a cable can be placed at the given coordinates"""
+        if not (0 <= x < self.ship.decks[0].width and 
+                0 <= y < self.ship.decks[0].height):
+            return False
+        
+        # Can only place cables on floor tiles (not walls)
+        tile = self.ship.decks[0].tiles[y][x]
+        return not tile.wall
+    
     def add_cable(self, x: int, y: int):
         """Add a cable at the specified coordinates"""
-        if (x, y) not in self.cables:
+        if self.can_place_cable(x, y) and (x, y) not in self.cables:
             self.cables[(x, y)] = Cable()
             self._update_networks()
     
@@ -30,9 +40,7 @@ class CableSystem:
     
     def start_drag(self, x: int, y: int):
         """Start cable dragging operation"""
-        # Ensure coordinates are valid before starting drag
-        if (0 <= x < self.ship.decks[0].width and 
-            0 <= y < self.ship.decks[0].height):
+        if self.can_place_cable(x, y):
             self.drag_start = (int(x), int(y))
             self.preview_cables.clear()
     
@@ -74,7 +82,9 @@ class CableSystem:
         dy *= 2
 
         for _ in range(n):
-            self.preview_cables.add((x, y))
+            # Only add to preview if cable can be placed here
+            if self.can_place_cable(x, y):
+                self.preview_cables.add((x, y))
             if error > 0:
                 x += x_inc
                 error -= dy

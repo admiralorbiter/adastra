@@ -2,6 +2,8 @@ from enum import Enum, auto
 from dataclasses import dataclass
 import pygame
 
+from world.objects import Bed, StorageContainer
+
 class BuildMode(Enum):
     NONE = auto()
     FLOOR = auto()
@@ -22,61 +24,77 @@ class BuildableItem:
             return False
         deck = ship.decks[0]
         
-        # If trying to build at the edge, allow it by expanding
-        if x == deck.width - 1 or y == deck.height - 1:
-            return True
-            
         # Check basic bounds
         if not (0 <= x < deck.width and 0 <= y < deck.height):
             return False
             
-        # For floors, check if there's an adjacent floor tile
-        if self.name == "Basic Floor":
-            # Skip if already a floor (not a wall)
-            if not deck.tiles[y][x].wall:
+        tile = deck.tiles[y][x]
+        
+        # For objects, check if tile is a floor and empty
+        if self.name in ["Bed", "Storage Container"]:
+            return (not tile.wall and  # Must be floor
+                    not tile.object and  # No existing object
+                    not tile.module)     # No existing module
+        
+        # For floor, must be next to existing floor
+        elif self.name == "Basic Floor":
+            if not tile.wall:  # Already a floor
                 return False
-                
-            # Check adjacent tiles (up, down, left, right)
+            # Check adjacent tiles for floor
             adjacent_coords = [
-                (x, y-1), (x, y+1),
-                (x-1, y), (x+1, y)
+                (x+1, y), (x-1, y), (x, y+1), (x, y-1)
             ]
+            return any(
+                0 <= ax < deck.width and 0 <= ay < deck.height 
+                and not deck.tiles[ay][ax].wall
+                for ax, ay in adjacent_coords
+            )
             
-            # Allow building if there's at least one adjacent floor
-            for adj_x, adj_y in adjacent_coords:
-                if (0 <= adj_x < deck.width and 
-                    0 <= adj_y < deck.height and 
-                    not deck.tiles[adj_y][adj_x].wall):
-                    return True
+        # For wall, must be next to existing wall
+        elif self.name == "Basic Wall":
+            if tile.wall:  # Already a wall
+                return False
+            # Check adjacent tiles for wall
+            adjacent_coords = [
+                (x+1, y), (x-1, y), (x, y+1), (x, y-1)
+            ]
+            return any(
+                0 <= ax < deck.width and 0 <= ay < deck.height 
+                and deck.tiles[ay][ax].wall
+                for ax, ay in adjacent_coords
+            )
+            
+        # For cable, must be on floor
+        elif self.name == "Power Cable":
+            return not tile.wall
                     
-            return False
-            
         return True
 
     def build(self, ship, x: int, y: int) -> bool:
         """Actually perform the building action"""
-        if not ship.decks:
+        if not self.can_build(ship, x, y):
             return False
             
         deck = ship.decks[0]
         
-        # Handle expansion if building at edges
-        if x == deck.width - 1:
-            ship.expand_deck("right")
-        if y == deck.height - 1:
-            ship.expand_deck("down")
-            
-        if not self.can_build(ship, x, y):
-            return False
-            
-        if self.name == "Basic Floor":
-            # Convert wall to floor
+        # Handle object placement
+        if self.name == "Bed":
+            deck.tiles[y][x].object = Bed()
+            return True
+        elif self.name == "Storage Container":
+            deck.tiles[y][x].object = StorageContainer()
+            return True
+        # Handle floor placement
+        elif self.name == "Basic Floor":
             deck.tiles[y][x].wall = False
-            
-            # Update the room to include the new floor tile
-            if deck.rooms:  # Assuming we're working with the first/only room
-                deck.rooms[0].tiles.append(deck.tiles[y][x])
-            
+            return True
+        # Handle wall placement
+        elif self.name == "Basic Wall":
+            deck.tiles[y][x].wall = True
+            return True
+        # Handle cable placement
+        elif self.name == "Power Cable":
+            ship.cable_system.add_cable(x, y)
             return True
             
         return False
@@ -93,19 +111,16 @@ class BuildSystem:
         self.categories = {
             BuildMode.FLOOR: BuildCategory(BuildMode.FLOOR, [
                 BuildableItem("Basic Floor", "A simple metal floor", (200, 200, 200)),
-                BuildableItem("Advanced Floor", "High-tech composite floor", (220, 220, 220))
             ]),
             BuildMode.WALL: BuildCategory(BuildMode.WALL, [
                 BuildableItem("Basic Wall", "Standard wall panel", (100, 100, 100)),
-                BuildableItem("Reinforced Wall", "Stronger wall panel", (120, 120, 120))
             ]),
             BuildMode.CABLE: BuildCategory(BuildMode.CABLE, [
-                BuildableItem("Life Support", "Provides oxygen", (100, 100, 255)),
-                BuildableItem("Reactor", "Generates power", (255, 100, 100))
+                BuildableItem("Power Cable", "Basic power cable", (255, 140, 0)),
             ]),
             BuildMode.OBJECT: BuildCategory(BuildMode.OBJECT, [
-                BuildableItem("Bed", "Crew sleeping quarters", (139, 69, 19)),
-                BuildableItem("Storage", "Storage container", (255, 255, 0))
+                BuildableItem("Bed", "A place for crew to rest", (139, 69, 19)),
+                BuildableItem("Storage Container", "Store items and resources", (160, 82, 45))
             ])
         }
         self.active_category: BuildCategory | None = None
@@ -155,22 +170,51 @@ class BuildUI:
                     y_pos += self.button_size + self.margin
 
         self.highlight_color = (100, 200, 255, 128)  # Light blue with alpha
+        self.selected_item = None
+        self.show_object_menu = False
+        self.object_menu_rect = pygame.Rect(
+            self.x, 
+            self.y + self.panel_height + 10, 
+            self.panel_width, 
+            100
+        )
 
     def handle_click(self, pos: tuple[int, int]) -> bool:
+        # Handle main button clicks
         for mode, button in self.buttons.items():
             if button.is_clicked(pos):
                 self.build_system.set_mode(mode)
                 button.active = (self.build_system.current_mode == mode)
                 
-                # Toggle cable view when Cable mode is selected
-                if mode == BuildMode.CABLE:
-                    self.game_state.cable_view_active = button.active
+                # Show object menu when Object mode is selected
+                if mode == BuildMode.OBJECT:
+                    self.show_object_menu = button.active
+                    self.selected_item = None
+                else:
+                    self.show_object_menu = False
                 
                 # Deactivate other buttons
                 for other_button in self.buttons.values():
                     if other_button != button:
                         other_button.active = False
                 return True
+                
+        # Handle object menu clicks if visible
+        if self.show_object_menu:
+            category = self.build_system.categories[BuildMode.OBJECT]
+            item_height = 30
+            for i, item in enumerate(category.items):
+                item_rect = pygame.Rect(
+                    self.object_menu_rect.x,
+                    self.object_menu_rect.y + i * item_height,
+                    self.object_menu_rect.width,
+                    item_height
+                )
+                if item_rect.collidepoint(pos):
+                    self.selected_item = item
+                    category.selected_item = item
+                    return True
+                    
         return False
 
     def draw(self, screen: pygame.Surface) -> None:
@@ -223,6 +267,45 @@ class BuildUI:
                 pygame.draw.rect(screen, (100, 200, 255), 
                                pygame.Rect(screen_x, screen_y, tile_size, tile_size), 
                                border_width)
+
+        # Draw object menu if visible
+        if self.show_object_menu:
+            # Draw menu background
+            s = pygame.Surface((self.object_menu_rect.width, self.object_menu_rect.height))
+            s.set_alpha(128)
+            s.fill((30, 30, 30))
+            screen.blit(s, (self.object_menu_rect.x, self.object_menu_rect.y))
+            
+            # Draw menu border
+            pygame.draw.rect(screen, (100, 200, 255), self.object_menu_rect, 2)
+            
+            # Draw object items
+            font = pygame.font.Font(None, 24)
+            item_height = 30
+            for i, item in enumerate(self.build_system.categories[BuildMode.OBJECT].items):
+                item_rect = pygame.Rect(
+                    self.object_menu_rect.x,
+                    self.object_menu_rect.y + i * item_height,
+                    self.object_menu_rect.width,
+                    item_height
+                )
+                
+                # Highlight selected item
+                if item == self.selected_item:
+                    pygame.draw.rect(screen, (60, 60, 60), item_rect)
+                
+                # Draw item icon
+                icon_rect = pygame.Rect(
+                    item_rect.x + 5,
+                    item_rect.y + 5,
+                    20,
+                    20
+                )
+                pygame.draw.rect(screen, item.icon_color, icon_rect)
+                
+                # Draw item name
+                text = font.render(item.name, True, (200, 200, 200))
+                screen.blit(text, (icon_rect.right + 10, item_rect.centery - text.get_height()//2))
 
 class UIButton:
     def __init__(self, rect: pygame.Rect, text: str, icon_color: tuple[int, int, int], tooltip: str = ""):

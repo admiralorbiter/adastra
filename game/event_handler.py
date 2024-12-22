@@ -37,61 +37,58 @@ class EventHandler:
     def handle_mouse_down(self, event):
         mouse_x, mouse_y = pygame.mouse.get_pos()
         
-        if event.button == 1:  # Left mouse button
-            world_x, world_y = self.game_state.camera.screen_to_world(mouse_x, mouse_y)
-            grid_x, grid_y = world_x // TILE_SIZE, world_y // TILE_SIZE
-            
-            if self.game_state.cable_view_active:
-                self.game_state.cable_system.start_drag(grid_x, grid_y)
-                return True
-            
         # Handle UI clicks first
         if self.game_state.build_ui.handle_click((mouse_x, mouse_y)):
             return  # Return early if UI handled the click
-
+        
+        # Convert screen coordinates to world coordinates once
+        world_x, world_y = self.game_state.camera.screen_to_world(mouse_x, mouse_y)
+        grid_x, grid_y = int(world_x // TILE_SIZE), int(world_y // TILE_SIZE)
+        
         if event.button == 1:  # Left mouse button
-            # Convert screen coordinates to world coordinates
-            world_x, world_y = self.game_state.camera.screen_to_world(mouse_x, mouse_y)
-            grid_x, grid_y = world_x // TILE_SIZE, world_y // TILE_SIZE
-            
-            # If in build mode, handle building
             current_item = self.game_state.build_ui.build_system.get_current_item()
-            if current_item and grid_x < self.game_state.ship.decks[0].width and grid_y < self.game_state.ship.decks[0].height:
+            
+            # Special handling for cable mode
+            if current_item and current_item.name == "Power Cable":
+                self.game_state.cable_view_active = True
+                self.game_state.cable_system.start_drag(grid_x, grid_y)
+                return True
+            
+            # Handle building if we have an item and are in bounds
+            elif current_item and grid_x < self.game_state.ship.decks[0].width and grid_y < self.game_state.ship.decks[0].height:
                 current_item.build(self.game_state.ship, grid_x, grid_y)
-            else:
-                # Check if clicking on a crew member
-                clicked_on_crew = False
-                for crew in self.game_state.ship.crew:
-                    if int(crew.x) == grid_x and int(crew.y) == grid_y:
-                        self.game_state.selected_crew = crew
-                        clicked_on_crew = True
-                        break
+                return True
+            
+            # Handle crew selection and movement
+            clicked_on_crew = False
+            for crew in self.game_state.ship.crew:
+                if int(crew.x) == grid_x and int(crew.y) == grid_y:
+                    self.game_state.selected_crew = crew
+                    clicked_on_crew = True
+                    break
+            
+            # Handle crew movement if we have a selected crew
+            if self.game_state.selected_crew and not clicked_on_crew:
+                if (grid_x < self.game_state.ship.decks[0].width and 
+                    grid_y < self.game_state.ship.decks[0].height and 
+                    self.game_state.ship.decks[0].tiles[grid_y][grid_x].is_walkable()):
+                    start = (int(self.game_state.selected_crew.x), int(self.game_state.selected_crew.y))
+                    goal = (grid_x, grid_y)
+                    path = find_path(self.game_state.ship.decks[0], start, goal)
+                    if path:
+                        self.game_state.selected_crew.set_path(path)
                 
-                # If we have a selected crew and didn't click on another crew,
-                # try to move the selected crew
-                if self.game_state.selected_crew and not clicked_on_crew:
-                    if (grid_x < self.game_state.ship.decks[0].width and 
-                        grid_y < self.game_state.ship.decks[0].height and 
-                        self.game_state.ship.decks[0].tiles[grid_y][grid_x].is_walkable()):
-                        start = (int(self.game_state.selected_crew.x), int(self.game_state.selected_crew.y))
-                        goal = (grid_x, grid_y)
-                        path = find_path(self.game_state.ship.decks[0], start, goal)
-                        if path:
-                            self.game_state.selected_crew.set_path(path)
-                    
-                    # Deselect crew after setting path
-                    self.game_state.selected_crew = None
+                self.game_state.selected_crew = None
 
     def handle_mouse_motion(self, event):
         if self.game_state.cable_view_active:
             mouse_x, mouse_y = pygame.mouse.get_pos()
-            # Convert screen coordinates to world coordinates
             world_x, world_y = self.game_state.camera.screen_to_world(mouse_x, mouse_y)
-            # Convert world coordinates to grid coordinates
-            grid_x = int(world_x / TILE_SIZE)
-            grid_y = int(world_y / TILE_SIZE)
+            grid_x = int(world_x // TILE_SIZE)
+            grid_y = int(world_y // TILE_SIZE)
             self.game_state.cable_system.update_drag(grid_x, grid_y)
 
     def handle_mouse_up(self, event):
         if event.button == 1 and self.game_state.cable_view_active:
             self.game_state.cable_system.end_drag()
+            self.game_state.cable_view_active = False
