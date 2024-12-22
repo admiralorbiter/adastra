@@ -16,6 +16,7 @@ class ShipRenderer:
         # Get current build item if in build mode and build_ui exists
         current_item = build_ui.build_system.get_current_item() if build_ui else None
 
+        # First pass: Draw tiles and modules
         for y in range(deck.height):
             for x in range(deck.width):
                 tile = deck.tiles[y][x]
@@ -26,9 +27,13 @@ class ShipRenderer:
                 elif tile.module:
                     # Differentiate modules by type:
                     if isinstance(tile.module, LifeSupportModule):
-                        color = (100, 100, 255)  # Blueish for Life Support
+                        # Red if unpowered, blue if powered
+                        if tile.module.is_powered():
+                            color = (100, 100, 255)  # Blueish for powered Life Support
+                        else:
+                            color = (255, 100, 100)  # Reddish for unpowered Life Support
                     elif isinstance(tile.module, ReactorModule):
-                        color = (255, 100, 100)  # Reddish for Reactor
+                        color = (255, 140, 0)  # Orange for Reactor
                 elif tile.object:
                     # Differentiate objects by class:
                     if isinstance(tile.object, Bed):
@@ -36,23 +41,37 @@ class ShipRenderer:
                     elif isinstance(tile.object, StorageContainer):
                         color = (255, 255, 0)  # Yellow for storage
 
-                # Highlight valid build locations when in build mode
-                if current_item:
-                    if current_item.can_build(ship, x, y):
-                        # Add a green tint to show valid build location
-                        r, g, b = color
-                        color = (min(255, r + 50), min(255, g + 100), b)
+                # Draw the tile
+                screen_x, screen_y = camera.world_to_screen(x * 32, y * 32)
+                pygame.draw.rect(screen, color, (screen_x, screen_y, 32, 32))
+                pygame.draw.rect(screen, (0, 0, 0), (screen_x, screen_y, 32, 32), 1)
 
-                # Use camera to convert world position to screen position
-                screen_x, screen_y = camera.world_to_screen(x * TILE_SIZE, y * TILE_SIZE)
-                rect = pygame.Rect(screen_x, screen_y, TILE_SIZE, TILE_SIZE)
-                pygame.draw.rect(screen, color, rect)
-                
-                # Draw valid build locations with a green outline
+                # Draw power status for modules
+                if tile.module:
+                    font = pygame.font.Font(None, 20)
+                    if isinstance(tile.module, ReactorModule):
+                        # Show power output
+                        text = f"+{tile.module.power_output}"
+                        text_color = (0, 255, 0)  # Green for power output
+                    else:
+                        # Show power required/available
+                        if tile.module.is_powered():
+                            text = f"{tile.module.power_available}/{tile.module.power_required}"
+                            text_color = (0, 255, 0)  # Green when powered
+                        else:
+                            text = f"0/{tile.module.power_required}"
+                            text_color = (255, 50, 50)  # Red when unpowered
+                    
+                    text_surface = font.render(text, True, text_color)
+                    text_rect = text_surface.get_rect(center=(screen_x + 16, screen_y + 16))
+                    screen.blit(text_surface, text_rect)
+
+                # Highlight valid build locations when in build mode
                 if current_item and current_item.can_build(ship, x, y):
-                    pygame.draw.rect(screen, (0, 255, 0), rect, 2)
-                else:
-                    pygame.draw.rect(screen, (0, 0, 0), rect, 1)
+                    s = pygame.Surface((32, 32))
+                    s.set_alpha(128)
+                    s.fill((0, 255, 0))
+                    screen.blit(s, (screen_x, screen_y))
 
         # Draw crew members
         for crew_member in ship.crew:

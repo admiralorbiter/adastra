@@ -5,7 +5,7 @@ from world.modules import LifeSupportModule, ReactorModule
 from world.objects import Bed, StorageContainer
 from models.crew import CrewMember, Skill
 
-def create_basic_ship():
+def create_basic_ship(cable_system=None):
     main_deck = Deck(width=10, height=10, name="Main Deck")
     
     # Initialize all tiles as floors by default
@@ -41,6 +41,7 @@ def create_basic_ship():
 
     ship = Ship(name="Player Ship")
     ship.add_deck(main_deck)
+    ship.cable_system = cable_system
 
     # Add initial crew members with positions
     engineer = CrewMember("Sarah Chen", Skill.ENGINEER)

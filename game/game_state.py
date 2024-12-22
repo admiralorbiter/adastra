@@ -23,10 +23,11 @@ class GameState:
         
         self.screen = pygame.display.set_mode((screen_width, screen_height))
         self.clock = pygame.time.Clock()
-        self.ship = create_basic_ship()
+        self.cable_system = CableSystem()
+        self.ship = create_basic_ship(self.cable_system)
+        self.cable_system.ship = self.ship
         self.build_ui = BuildUI(screen_width, self)
         self.camera = Camera(screen_width, screen_height)
-        self.cable_system = CableSystem()
         self.cable_renderer = CableRenderer()
         self.cable_view_active = False
         

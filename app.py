@@ -23,6 +23,9 @@ def main():
         # Handle events
         event_handler.handle_events()
 
+        # Update ship
+        game_state.ship.update(dt)
+
         # Rendering
         if game_state.cable_view_active:
             game_state.screen.fill((0, 0, 0))

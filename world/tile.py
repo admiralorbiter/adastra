@@ -7,6 +7,7 @@ class Tile:
         self.object = None
         self.module = None
         self.cable = None
+        self.connected_modules = set()  # Track connected modules through cables
 
     def is_walkable(self):
         if self.wall:

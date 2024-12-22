@@ -1,14 +1,20 @@
+from world.modules import ReactorModule
+
+
 class Cable:
     def __init__(self):
         self.powered = False
-        self.network_id = None  # For tracking connected cables
+        self.network_id = None
+        self.connected_modules = []  # List of connected modules
 
 class CableSystem:
     def __init__(self):
         self.cables = {}  # (x, y) -> Cable
-        self.preview_cables = set()  # Stores coordinates for cable preview
+        self.preview_cables = set()
         self.drag_start = None
         self.drag_end = None
+        self.networks = []  # List of connected cable networks
+        self.ship = None  # Reference to ship will be set later
     
     def add_cable(self, x: int, y: int):
         """Add a cable at the specified coordinates"""
@@ -70,7 +76,84 @@ class CableSystem:
                 y += y_inc
                 error += dx
     
+    def update_networks(self):
+        """Public method to update cable networks and power distribution"""
+        self._update_networks()
+    
     def _update_networks(self):
-        """Update connected cable networks"""
-        # Implement network connectivity logic here
-        pass 
+        """Internal method to update connected cable networks and power distribution"""
+        # Clear existing networks and module connections
+        self.networks = []
+        visited_cables = set()
+        
+        # Reset all module power
+        if self.ship and self.ship.decks:
+            for deck in self.ship.decks:
+                for y in range(deck.height):
+                    for x in range(deck.width):
+                        if deck.tiles[y][x].module and not isinstance(deck.tiles[y][x].module, ReactorModule):
+                            deck.tiles[y][x].module.power_available = 0
+
+        # Find all connected networks
+        for pos, cable in self.cables.items():
+            if pos not in visited_cables:
+                network = self._find_connected_network(pos, visited_cables)
+                if network:
+                    self.networks.append(network)
+                    self._distribute_power(network)
+    
+    def _find_connected_network(self, start_pos, visited):
+        """Find all connected cables and modules in a network"""
+        network = {
+            'cables': set(),
+            'modules': set(),
+            'total_power': 0,
+            'total_required': 0
+        }
+        
+        to_visit = [start_pos]
+        while to_visit:
+            pos = to_visit.pop()
+            if pos in visited:
+                continue
+                
+            visited.add(pos)
+            network['cables'].add(pos)
+            x, y = pos
+            
+            # Check adjacent tiles for modules and cables
+            adjacent = [(x+1,y), (x-1,y), (x,y+1), (x,y-1)]
+            for adj_x, adj_y in adjacent:
+                # Check for connected modules
+                if (0 <= adj_x < self.ship.decks[0].width and 
+                    0 <= adj_y < self.ship.decks[0].height):
+                    tile = self.ship.decks[0].tiles[adj_y][adj_x]
+                    if tile.module:
+                        network['modules'].add(tile.module)
+                        if isinstance(tile.module, ReactorModule):
+                            network['total_power'] += tile.module.power_output
+                        else:
+                            network['total_required'] += tile.module.power_required
+                
+                # Check for connected cables
+                adj_pos = (adj_x, adj_y)
+                if adj_pos in self.cables and adj_pos not in visited:
+                    to_visit.append(adj_pos)
+        
+        return network
+    
+    def _distribute_power(self, network):
+        """Distribute power from reactors to modules in network"""
+        if not network['modules']:
+            return
+        
+        # Calculate available power per module
+        power_per_module = min(
+            network['total_power'] / max(1, len(network['modules']) - 1),  # -1 for reactor
+            network['total_required']
+        )
+        
+        # Distribute power to modules
+        for module in network['modules']:
+            if not isinstance(module, ReactorModule):
+                module.power_available = min(power_per_module, module.power_required)

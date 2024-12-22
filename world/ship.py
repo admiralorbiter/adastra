@@ -9,6 +9,7 @@ class Ship:
         self.global_power = 0
         self.max_power = 0
         self.crew = []
+        self.cable_system = None
         
         # New oxygen-related attributes
         self.oxygen_capacity = 100.0  # Maximum oxygen the ship can hold
@@ -26,6 +27,8 @@ class Ship:
         for crew_member in self.crew:
             crew_member.update(dt)
             
+        # Update cable system and power distribution
+        self.cable_system.update_networks()
         self.calculate_resources()
 
     def calculate_resources(self):
