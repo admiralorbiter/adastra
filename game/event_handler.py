@@ -9,15 +9,22 @@ class EventHandler:
         self.game_state = game_state
 
     def handle_events(self):
+        # Handle keyboard state for continuous movement
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_w]:
+            self.game_state.camera.move(0, 5)   # Move up (positive y)
+        if keys[pygame.K_s]:
+            self.game_state.camera.move(0, -5)  # Move down (negative y)
+        if keys[pygame.K_a]:
+            self.game_state.camera.move(5, 0)   # Move left (positive x)
+        if keys[pygame.K_d]:
+            self.game_state.camera.move(-5, 0)  # Move right (negative x)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.game_state.running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.handle_mouse_down(event)
-            elif event.type == pygame.MOUSEBUTTONUP:
-                self.handle_mouse_up(event)
-            elif event.type == pygame.MOUSEMOTION:
-                self.handle_mouse_motion(event)
 
     def handle_mouse_down(self, event):
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -57,13 +64,3 @@ class EventHandler:
                     
                     # Deselect crew after setting path
                     self.game_state.selected_crew = None
-        elif event.button == 3:  # Right mouse button
-            self.game_state.camera.start_pan(mouse_x, mouse_y)
-
-    def handle_mouse_up(self, event):
-       if event.button == 3:  # Right mouse button
-            self.game_state.camera.stop_pan()
-
-    def handle_mouse_motion(self, event):
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-        self.game_state.camera.update_pan(mouse_x, mouse_y)

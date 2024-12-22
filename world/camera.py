@@ -40,3 +40,8 @@ class Camera:
         screen_x = world_x + self.x
         screen_y = world_y + self.y
         return screen_x, screen_y 
+
+    def move(self, dx, dy):
+        """Move the camera by the given delta x and y amounts"""
+        self.x += dx
+        self.y += dy
