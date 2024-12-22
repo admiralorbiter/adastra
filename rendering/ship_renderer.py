@@ -2,6 +2,7 @@ import pygame
 
 from world.modules import LifeSupportModule, ReactorModule
 from world.objects import Bed, StorageContainer
+from rendering.asset_loader import AssetLoader
 
 TILE_SIZE = 32
 
@@ -16,6 +17,8 @@ class ShipRenderer:
         # Get current build item if in build mode and build_ui exists
         current_item = build_ui.build_system.get_current_item() if build_ui else None
 
+        asset_loader = AssetLoader.get_instance()
+        
         # First pass: Draw tiles and modules
         for y in range(deck.height):
             for x in range(deck.width):
@@ -46,6 +49,21 @@ class ShipRenderer:
                 pygame.draw.rect(screen, color, (screen_x, screen_y, 32, 32))
                 pygame.draw.rect(screen, (0, 0, 0), (screen_x, screen_y, 32, 32), 1)
 
+                # Draw modules with images
+                if tile.module:
+                    if isinstance(tile.module, LifeSupportModule):
+                        image = asset_loader.get_image('life_support')
+                        if not tile.module.is_powered():
+                            # Create a red tint for unpowered state
+                            tinted = image.copy()
+                            tinted.fill((255, 0, 0, 128), special_flags=pygame.BLEND_RGBA_MULT)
+                            screen.blit(tinted, (screen_x, screen_y))
+                        else:
+                            screen.blit(image, (screen_x, screen_y))
+                    elif isinstance(tile.module, ReactorModule):
+                        image = asset_loader.get_image('reactor')
+                        screen.blit(image, (screen_x, screen_y))
+                
                 # Draw power status for modules
                 if tile.module:
                     font = pygame.font.Font(None, 20)

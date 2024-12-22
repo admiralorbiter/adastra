@@ -3,11 +3,15 @@ from game.game_state import GameState
 from game.event_handler import EventHandler
 from rendering.ship_renderer import ShipRenderer
 from rendering.cable_renderer import CableRenderer
+from rendering.asset_loader import AssetLoader
 
 def main():
     pygame.init()
     game_state = GameState()
     game_state.initialize(1280, 720)
+    
+    # Initialize asset loader
+    AssetLoader.get_instance()
     
     event_handler = EventHandler(game_state)
     ship_renderer = ShipRenderer()
