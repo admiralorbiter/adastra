@@ -6,6 +6,7 @@ class Tile:
         self.wall = False
         self.object = None
         self.module = None
+        self.cable = None
 
     def is_walkable(self):
         if self.wall:

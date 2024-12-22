@@ -2,6 +2,7 @@ import pygame
 from game.game_state import GameState
 from game.event_handler import EventHandler
 from rendering.ship_renderer import ShipRenderer
+from rendering.cable_renderer import CableRenderer
 
 def main():
     pygame.init()
@@ -10,6 +11,7 @@ def main():
     
     event_handler = EventHandler(game_state)
     ship_renderer = ShipRenderer()
+    cable_renderer = CableRenderer()
 
     while game_state.running:
         dt = game_state.clock.tick(30) / 1000.0
@@ -22,14 +24,13 @@ def main():
         event_handler.handle_events()
 
         # Rendering
-        game_state.screen.fill((0, 0, 0))
-        ship_renderer.draw_ship(
-            game_state.screen,
-            game_state.ship,
-            game_state.camera,
-            game_state.selected_crew,
-            game_state.build_ui
-        )
+        if game_state.cable_view_active:
+            game_state.screen.fill((0, 0, 0))
+            ship_renderer.draw_ship(game_state.screen, game_state.ship, game_state.camera, None, game_state.build_ui)
+            cable_renderer.draw_cables(game_state.screen, game_state.ship, game_state.camera, game_state.cable_system)
+        else:
+            game_state.screen.fill((0, 0, 0))
+            ship_renderer.draw_ship(game_state.screen, game_state.ship, game_state.camera, game_state.selected_crew, game_state.build_ui)
         game_state.build_ui.draw(game_state.screen)
         pygame.display.flip()
 

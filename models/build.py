@@ -6,7 +6,7 @@ class BuildMode(Enum):
     NONE = auto()
     FLOOR = auto()
     WALL = auto()
-    MODULE = auto()
+    CABLE = auto()
     OBJECT = auto()
 
 @dataclass
@@ -99,7 +99,7 @@ class BuildSystem:
                 BuildableItem("Basic Wall", "Standard wall panel", (100, 100, 100)),
                 BuildableItem("Reinforced Wall", "Stronger wall panel", (120, 120, 120))
             ]),
-            BuildMode.MODULE: BuildCategory(BuildMode.MODULE, [
+            BuildMode.CABLE: BuildCategory(BuildMode.CABLE, [
                 BuildableItem("Life Support", "Provides oxygen", (100, 100, 255)),
                 BuildableItem("Reactor", "Generates power", (255, 100, 100))
             ]),
@@ -126,7 +126,8 @@ class BuildSystem:
         return None
 
 class BuildUI:
-    def __init__(self, screen_width: int):
+    def __init__(self, screen_width: int, game_state):
+        self.game_state = game_state
         self.build_system = BuildSystem()
         self.button_size = 40
         self.margin = 10
@@ -158,6 +159,11 @@ class BuildUI:
             if button.is_clicked(pos):
                 self.build_system.set_mode(mode)
                 button.active = (self.build_system.current_mode == mode)
+                
+                # Toggle cable view when Cable mode is selected
+                if mode == BuildMode.CABLE:
+                    self.game_state.cable_view_active = button.active
+                
                 # Deactivate other buttons
                 for other_button in self.buttons.values():
                     if other_button != button:

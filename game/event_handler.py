@@ -25,9 +25,22 @@ class EventHandler:
                 self.game_state.running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.handle_mouse_down(event)
+            elif event.type == pygame.MOUSEBUTTONUP:
+                self.handle_mouse_up(event)
+            elif event.type == pygame.MOUSEMOTION:
+                self.handle_mouse_motion(event)
 
     def handle_mouse_down(self, event):
         mouse_x, mouse_y = pygame.mouse.get_pos()
+        
+        if event.button == 1:  # Left mouse button
+            world_x, world_y = self.game_state.camera.screen_to_world(mouse_x, mouse_y)
+            grid_x, grid_y = world_x // TILE_SIZE, world_y // TILE_SIZE
+            
+            if self.game_state.cable_view_active:
+                self.game_state.cable_system.start_drag(grid_x, grid_y)
+                return True
+            
         # Handle UI clicks first
         if self.game_state.build_ui.handle_click((mouse_x, mouse_y)):
             return  # Return early if UI handled the click
@@ -64,3 +77,14 @@ class EventHandler:
                     
                     # Deselect crew after setting path
                     self.game_state.selected_crew = None
+
+    def handle_mouse_motion(self, event):
+        if self.game_state.cable_view_active:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            world_x, world_y = self.game_state.camera.screen_to_world(mouse_x, mouse_y)
+            grid_x, grid_y = world_x // TILE_SIZE, world_y // TILE_SIZE
+            self.game_state.cable_system.update_drag(grid_x, grid_y)
+
+    def handle_mouse_up(self, event):
+        if event.button == 1 and self.game_state.cable_view_active:
+            self.game_state.cable_system.end_drag()

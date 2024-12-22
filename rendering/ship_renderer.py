@@ -13,8 +13,8 @@ class ShipRenderer:
 
         deck = ship.decks[0]
         
-        # Get current build item if in build mode
-        current_item = build_ui.build_system.get_current_item()
+        # Get current build item if in build mode and build_ui exists
+        current_item = build_ui.build_system.get_current_item() if build_ui else None
 
         for y in range(deck.height):
             for x in range(deck.width):
