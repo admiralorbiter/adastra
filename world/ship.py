@@ -70,26 +70,55 @@ class Ship:
     def add_crew_member(self, crew_member):
         self.crew.append(crew_member)
 
-    def expand_deck(self, direction: str) -> None:
-        """Expand the deck in the specified direction"""
+    def expand_deck(self, direction: str, x: int = None, y: int = None) -> None:
         if not self.decks:
             return
-            
-        deck = self.decks[0]
-        new_tiles = []
         
-        if direction == "right":
-            # Add new column
-            for y in range(deck.height):
-                new_tile = Tile(x=deck.width, y=y)  # Use the new width as x coordinate
-                new_tile.wall = True  # Start as wall
-                deck.tiles[y].append(new_tile)
+        deck = self.decks[0]
+        
+        def create_tile(x, y, is_wall=False):
+            tile = Tile(x=x, y=y)
+            tile.wall = is_wall
+            return tile
+        
+        if direction == "right" and y is not None:
+            # Ensure all rows have proper width first
+            for row_idx, row in enumerate(deck.tiles):
+                while len(row) <= deck.width:
+                    row.append(create_tile(len(row), row_idx))
+            # Add wall tile
+            deck.tiles[y][deck.width] = create_tile(deck.width, y, is_wall=True)
             deck.width += 1
             
-        elif direction == "down":
-            # Add new row
-            new_row = [Tile(x=x, y=deck.height) for x in range(deck.width)]  # Use new height as y coordinate
-            for tile in new_row:
-                tile.wall = True  # Start as wall
+        elif direction == "left" and y is not None:
+            # Shift all x coordinates right
+            for row in deck.tiles:
+                for tile in row:
+                    if tile:
+                        tile.x += 1
+                # Insert empty tiles at start of each row
+                row.insert(0, create_tile(0, deck.tiles.index(row)))
+            # Add wall tile
+            deck.tiles[y][0] = create_tile(0, y, is_wall=True)
+            deck.width += 1
+            
+        elif direction == "down" and x is not None:
+            # Add new row with proper tiles
+            new_row = [create_tile(i, deck.height) for i in range(deck.width)]
             deck.tiles.append(new_row)
+            # Set wall tile
+            deck.tiles[deck.height][x] = create_tile(x, deck.height, is_wall=True)
+            deck.height += 1
+            
+        elif direction == "up" and x is not None:
+            # Shift all y coordinates down
+            for y in range(len(deck.tiles)):
+                for tile in deck.tiles[y]:
+                    if tile:
+                        tile.y += 1
+            # Add new row with proper tiles
+            new_row = [create_tile(i, 0) for i in range(deck.width)]
+            deck.tiles.insert(0, new_row)
+            # Set wall tile
+            deck.tiles[0][x] = create_tile(x, 0, is_wall=True)
             deck.height += 1

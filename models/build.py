@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import pygame
 
 from world.objects import Bed, StorageContainer
+from world.tile import Tile
 
 class BuildMode(Enum):
     NONE = auto()
@@ -24,50 +25,30 @@ class BuildableItem:
             return False
         deck = ship.decks[0]
         
-        # Check basic bounds
+        # For wall, allow building within bounds or one tile beyond
+        if self.name == "Basic Wall":
+            # Allow building one tile beyond in any direction
+            if not (-1 <= x <= deck.width and -1 <= y <= deck.height):
+                return False
+            
+            # If within bounds, check if tile is empty
+            if 0 <= x < deck.width and 0 <= y < deck.height:
+                tile = deck.tiles[y][x]
+                if tile.wall or tile.module or tile.object:
+                    return False
+                
+            # Must be adjacent to existing tile
+            adjacent_coords = [
+                (ax, ay) for ax, ay in [
+                    (x+1, y), (x-1, y), (x, y+1), (x, y-1)
+                ] if 0 <= ax < deck.width and 0 <= ay < deck.height
+            ]
+            return len(adjacent_coords) > 0
+        
+        # For other items, check normal bounds
         if not (0 <= x < deck.width and 0 <= y < deck.height):
             return False
-            
-        tile = deck.tiles[y][x]
         
-        # For objects, check if tile is a floor and empty
-        if self.name in ["Bed", "Storage Container"]:
-            return (not tile.wall and  # Must be floor
-                    not tile.object and  # No existing object
-                    not tile.module)     # No existing module
-        
-        # For floor, must be next to existing floor
-        elif self.name == "Basic Floor":
-            if not tile.wall:  # Already a floor
-                return False
-            # Check adjacent tiles for floor
-            adjacent_coords = [
-                (x+1, y), (x-1, y), (x, y+1), (x, y-1)
-            ]
-            return any(
-                0 <= ax < deck.width and 0 <= ay < deck.height 
-                and not deck.tiles[ay][ax].wall
-                for ax, ay in adjacent_coords
-            )
-            
-        # For wall, must be next to existing wall
-        elif self.name == "Basic Wall":
-            if tile.wall:  # Already a wall
-                return False
-            # Check adjacent tiles for wall
-            adjacent_coords = [
-                (x+1, y), (x-1, y), (x, y+1), (x, y-1)
-            ]
-            return any(
-                0 <= ax < deck.width and 0 <= ay < deck.height 
-                and deck.tiles[ay][ax].wall
-                for ax, ay in adjacent_coords
-            )
-            
-        # For cable, must be on floor
-        elif self.name == "Power Cable":
-            return not tile.wall
-                    
         return True
 
     def build(self, ship, x: int, y: int) -> bool:
@@ -77,26 +58,46 @@ class BuildableItem:
             
         deck = ship.decks[0]
         
-        # Handle object placement
-        if self.name == "Bed":
+        # Handle wall placement with expansion
+        if self.name == "Basic Wall":
+            # Handle expansion cases
+            if x == deck.width:
+                ship.expand_deck("right", y=y)
+                return True
+            elif x == -1:
+                ship.expand_deck("left", y=y)
+                return True
+            elif y == deck.height:
+                ship.expand_deck("down", x=x)
+                return True
+            elif y == -1:
+                ship.expand_deck("up", x=x)
+                return True
+            
+            # Place single wall within bounds
+            if 0 <= x < deck.width and 0 <= y < deck.height:
+                # Ensure tile exists before setting wall
+                if not deck.tiles[y][x]:
+                    deck.tiles[y][x] = Tile(x=x, y=y)
+                deck.tiles[y][x].wall = True
+                return True
+        
+        # Handle other building types...
+        elif self.name == "Basic Floor":
+            if not deck.tiles[y][x]:
+                deck.tiles[y][x] = Tile(x=x, y=y)
+            deck.tiles[y][x].wall = False
+            return True
+        elif self.name == "Bed":
             deck.tiles[y][x].object = Bed()
             return True
         elif self.name == "Storage Container":
             deck.tiles[y][x].object = StorageContainer()
             return True
-        # Handle floor placement
-        elif self.name == "Basic Floor":
-            deck.tiles[y][x].wall = False
-            return True
-        # Handle wall placement
-        elif self.name == "Basic Wall":
-            deck.tiles[y][x].wall = True
-            return True
-        # Handle cable placement
         elif self.name == "Power Cable":
             ship.cable_system.add_cable(x, y)
             return True
-            
+        
         return False
 
 class BuildCategory:

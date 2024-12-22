@@ -54,10 +54,12 @@ class EventHandler:
                 self.game_state.cable_system.start_drag(grid_x, grid_y)
                 return True
             
-            # Handle building if we have an item and are in bounds
-            elif current_item and grid_x < self.game_state.ship.decks[0].width and grid_y < self.game_state.ship.decks[0].height:
-                current_item.build(self.game_state.ship, grid_x, grid_y)
-                return True
+            # Handle building if we have an item
+            elif current_item:
+                # Allow building within bounds or one tile beyond
+                if 0 <= grid_x <= self.game_state.ship.decks[0].width and 0 <= grid_y <= self.game_state.ship.decks[0].height:
+                    current_item.build(self.game_state.ship, grid_x, grid_y)
+                    return True
             
             # Handle crew selection and movement
             clicked_on_crew = False
@@ -84,8 +86,9 @@ class EventHandler:
         if self.game_state.cable_view_active:
             mouse_x, mouse_y = pygame.mouse.get_pos()
             world_x, world_y = self.game_state.camera.screen_to_world(mouse_x, mouse_y)
-            grid_x = int(world_x // TILE_SIZE)
-            grid_y = int(world_y // TILE_SIZE)
+            # Convert world coordinates to grid coordinates
+            grid_x = int(world_x / TILE_SIZE)
+            grid_y = int(world_y / TILE_SIZE)
             self.game_state.cable_system.update_drag(grid_x, grid_y)
 
     def handle_mouse_up(self, event):
