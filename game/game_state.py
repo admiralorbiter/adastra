@@ -12,6 +12,7 @@ class GameState:
         self.cable_system = None
         self.cable_renderer = None
         self.cable_view_active = False
+        self.time_manager = None
 
     def initialize(self, screen_width, screen_height):
         from world.camera import Camera
@@ -20,6 +21,7 @@ class GameState:
         from rendering.cable_renderer import CableRenderer
         from rendering.build_ui import BuildUI
         from world.ship import Ship
+        from game.time_manager import TimeManager
 
         self.screen = pygame.display.set_mode((screen_width, screen_height))
         self.clock = pygame.time.Clock()
@@ -30,6 +32,7 @@ class GameState:
         self.camera = Camera(screen_width, screen_height)
         self.cable_renderer = CableRenderer()
         self.cable_view_active = False
+        self.time_manager = TimeManager()
         
         # Center camera on ship
         ship_width = self.ship.decks[0].width * 32  # TILE_SIZE

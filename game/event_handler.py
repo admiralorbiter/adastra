@@ -23,6 +23,8 @@ class EventHandler:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.game_state.running = False
+            elif event.type == pygame.KEYDOWN:
+                self.handle_keydown(event)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button in (4, 5):  # Mouse wheel up (4) or down (5)
                     mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -33,6 +35,14 @@ class EventHandler:
                 self.handle_mouse_up(event)
             elif event.type == pygame.MOUSEMOTION:
                 self.handle_mouse_motion(event)
+
+    def handle_keydown(self, event):
+        if event.key == pygame.K_SPACE:
+            self.game_state.time_manager.toggle_pause()
+        elif event.key == pygame.K_1:
+            self.game_state.time_manager.set_time_scale(1.0)
+        elif event.key == pygame.K_3:
+            self.game_state.time_manager.set_time_scale(3.0)
 
     def handle_mouse_down(self, event):
         mouse_x, mouse_y = pygame.mouse.get_pos()

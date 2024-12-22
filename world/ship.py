@@ -13,13 +13,16 @@ class Ship:
         
         # New oxygen-related attributes
         self.oxygen_capacity = 100.0  # Maximum oxygen the ship can hold
-        self.oxygen_consumption_per_crew = 0.1  # Oxygen used per crew member per second
+        self.oxygen_consumption_per_crew = 1  # Oxygen used per crew member per second
 
     def add_deck(self, deck):
         self.decks.append(deck)
         self.calculate_oxygen_capacity()
 
     def update(self, dt):
+        if dt == 0:  # Skip updates when paused
+            return
+            
         # Update all decks and recalculate resources
         for deck in self.decks:
             deck.update(dt)
@@ -30,9 +33,9 @@ class Ship:
             
         # Update cable system and power distribution
         self.cable_system.update_networks()
-        self.calculate_resources()
-
-    def calculate_resources(self):
+        self.calculate_resources(dt)  # Pass dt to calculate_resources
+        
+    def calculate_resources(self, dt):
         total_power = 0
         life_support_oxygen = 0
 
@@ -41,28 +44,16 @@ class Ship:
                 for tile in room.tiles:
                     if tile.module:
                         mod = tile.module
-                        # Check module type
                         if hasattr(mod, 'power_output'):
                             total_power += mod.power_output
                         if hasattr(mod, 'oxygen_production'):
-                            life_support_oxygen += mod.oxygen_production
+                            life_support_oxygen += mod.oxygen_production * dt
 
         self.max_power = total_power
-        self.global_oxygen += life_support_oxygen
-        if self.global_oxygen > self.oxygen_capacity:
-            self.global_oxygen = self.oxygen_capacity
-
-        # Calculate oxygen changes
-        total_oxygen_production = 0
-        total_oxygen_consumption = len(self.crew) * self.oxygen_consumption_per_crew
-
-        for deck in self.decks:
-            for room in deck.rooms:
-                for tile in room.tiles:
-                    if tile.module:
-                        mod = tile.module
-                        if hasattr(mod, 'oxygen_production'):
-                            total_oxygen_production += mod.oxygen_production
+        
+        # Calculate oxygen changes with dt
+        total_oxygen_production = life_support_oxygen
+        total_oxygen_consumption = len(self.crew) * self.oxygen_consumption_per_crew * dt
 
         # Update oxygen levels
         oxygen_change = (total_oxygen_production - total_oxygen_consumption)
