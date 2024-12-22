@@ -7,6 +7,7 @@ from world.room import Room
 from world.modules import LifeSupportModule, ReactorModule
 from world.objects import Bed, StorageContainer
 from models.crew import CrewMember, Skill
+from world.camera import Camera
 
 TILE_SIZE = 32
 
@@ -63,9 +64,7 @@ def create_basic_ship():
 
     return ship
 
-def draw_ship(screen, ship):
-    # Basic rendering logic
-    # For simplicity, assume just one deck:
+def draw_ship(screen, ship, camera, selected_crew=None):
     if not ship.decks:
         return
 
@@ -73,8 +72,6 @@ def draw_ship(screen, ship):
     for y in range(deck.height):
         for x in range(deck.width):
             tile = deck.tiles[y][x]
-
-            # Decide the color based on what’s on the tile
             color = (200, 200, 200)  # Default floor color
             
             if tile.wall:
@@ -92,49 +89,46 @@ def draw_ship(screen, ship):
                 elif isinstance(tile.object, StorageContainer):
                     color = (255, 255, 0)  # Yellow for storage
 
-            # Draw the tile as a rectangle
-            rect = pygame.Rect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE)
+            # Use camera to convert world position to screen position
+            screen_x, screen_y = camera.world_to_screen(x * TILE_SIZE, y * TILE_SIZE)
+            rect = pygame.Rect(screen_x, screen_y, TILE_SIZE, TILE_SIZE)
             pygame.draw.rect(screen, color, rect)
             # Optionally draw a grid line
             pygame.draw.rect(screen, (0,0,0), rect, 1)
 
-    # Draw crew members on the grid
+    # Draw crew members
     for crew_member in ship.crew:
-        center_x = crew_member.x * TILE_SIZE + TILE_SIZE // 2
-        center_y = crew_member.y * TILE_SIZE + TILE_SIZE // 2
+        screen_x, screen_y = camera.world_to_screen(
+            crew_member.x * TILE_SIZE + TILE_SIZE // 2,
+            crew_member.y * TILE_SIZE + TILE_SIZE // 2
+        )
         radius = TILE_SIZE // 3
-        color = (0, 255, 0)  # Green for crew
-        pygame.draw.circle(screen, color, (center_x, center_y), radius)
+        pygame.draw.circle(screen, (0, 255, 0), (screen_x, screen_y), radius)
 
-    # Draw oxygen level indicator in bottom right
-    screen_width, screen_height = screen.get_size()
-    
-    # Define indicator dimensions and position
-    indicator_width = 200
-    indicator_height = 30
-    padding = 20
-    x = screen_width - indicator_width - padding
-    y = screen_height - indicator_height - padding
-    
-    # Draw background bar
-    bg_rect = pygame.Rect(x, y, indicator_width, indicator_height)
-    pygame.draw.rect(screen, (50, 50, 50), bg_rect)
-    
-    # Draw oxygen level
-    oxygen_width = int((indicator_width - 4) * (ship.global_oxygen / ship.oxygen_capacity))
-    oxygen_rect = pygame.Rect(x + 2, y + 2, oxygen_width, indicator_height - 4)
-    oxygen_color = (100, 200, 255)  # Light blue for oxygen
-    pygame.draw.rect(screen, oxygen_color, oxygen_rect)
-    
-    # Draw border
-    pygame.draw.rect(screen, (200, 200, 200), bg_rect, 2)
-    
-    # Draw text
-    font = pygame.font.Font(None, 24)
-    text = f"O₂: {int(ship.global_oxygen)}%"
-    text_surface = font.render(text, True, (255, 255, 255))
-    text_rect = text_surface.get_rect(midleft=(x + 10, y + indicator_height // 2))
-    screen.blit(text_surface, text_rect)
+    # Draw selected crew highlight and path
+    if selected_crew:
+        screen_x, screen_y = camera.world_to_screen(
+            selected_crew.x * TILE_SIZE + TILE_SIZE // 2,
+            selected_crew.y * TILE_SIZE + TILE_SIZE // 2
+        )
+        radius = TILE_SIZE // 2
+        pygame.draw.circle(screen, (255, 255, 255), (screen_x, screen_y), radius, 2)
+
+        if selected_crew.move_path:
+            path_points = []
+            start_x, start_y = camera.world_to_screen(
+                selected_crew.x * TILE_SIZE + TILE_SIZE // 2,
+                selected_crew.y * TILE_SIZE + TILE_SIZE // 2
+            )
+            path_points.append((start_x, start_y))
+            
+            for x, y in selected_crew.move_path:
+                screen_x, screen_y = camera.world_to_screen(
+                    x * TILE_SIZE + TILE_SIZE // 2,
+                    y * TILE_SIZE + TILE_SIZE // 2
+                )
+                path_points.append((screen_x, screen_y))
+            pygame.draw.lines(screen, (255, 255, 0), False, path_points, 2)
 
 def main():
     pygame.init()
@@ -142,8 +136,15 @@ def main():
     clock = pygame.time.Clock()
 
     ship = create_basic_ship()
-    selected_crew = None  # Track selected crew member
+    selected_crew = None
     build_ui = BuildUI(screen.get_width())
+
+    # Initialize camera
+    camera = Camera(screen.get_width(), screen.get_height())
+    # Center camera on ship
+    ship_width = ship.decks[0].width * TILE_SIZE
+    ship_height = ship.decks[0].height * TILE_SIZE
+    camera.center_on(ship_width, ship_height)
 
     running = True
     while running:
@@ -158,82 +159,48 @@ def main():
                 # Handle UI clicks first
                 if build_ui.handle_click((mouse_x, mouse_y)):
                     continue
-                
-                grid_x = mouse_x // TILE_SIZE
-                grid_y = mouse_y // TILE_SIZE
 
-                # Handle build mode if active
-                current_item = build_ui.build_system.get_current_item()
-                if current_item:
-                    if event.button == 1:  # Left click to build
-                        if current_item.can_build(ship, grid_x, grid_y):
-                            current_item.build(ship, grid_x, grid_y)
-                    continue
-
-                # Left click for selection
-                if event.button == 1:  
+                if event.button == 3:  # Right mouse button
+                    if not selected_crew:  # Only start panning if no crew selected
+                        camera.start_pan(mouse_x, mouse_y)
+                elif event.button == 1:  # Left mouse button
+                    # Convert screen coordinates to world coordinates
+                    world_x, world_y = camera.screen_to_world(mouse_x, mouse_y)
+                    grid_x, grid_y = world_x // TILE_SIZE, world_y // TILE_SIZE
+                    
+                    # Handle selection
                     selected_crew = None
                     for crew in ship.crew:
                         if int(crew.x) == grid_x and int(crew.y) == grid_y:
                             selected_crew = crew
                             break
 
-                # Right click for movement (if crew selected)
-                elif event.button == 3 and selected_crew:  
-                    if (grid_x < ship.decks[0].width and 
-                        grid_y < ship.decks[0].height and 
-                        ship.decks[0].tiles[grid_y][grid_x].is_walkable()):
-                        start = (int(selected_crew.x), int(selected_crew.y))
-                        goal = (grid_x, grid_y)
-                        path = find_path(ship.decks[0], start, goal)
-                        if path:
-                            selected_crew.set_path(path)
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 3:  # Right mouse button
+                    camera.stop_pan()
 
-        # Update game logic
-        for crew in ship.crew:
-            crew.update(dt)
-        ship.update(dt)
+            elif event.type == pygame.MOUSEMOTION:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                camera.update_pan(mouse_x, mouse_y)
+
+            # Handle right-click movement for selected crew
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 3 and selected_crew:
+                world_x, world_y = camera.screen_to_world(mouse_x, mouse_y)
+                grid_x, grid_y = world_x // TILE_SIZE, world_y // TILE_SIZE
+                
+                if (grid_x < ship.decks[0].width and 
+                    grid_y < ship.decks[0].height and 
+                    ship.decks[0].tiles[grid_y][grid_x].is_walkable()):
+                    start = (int(selected_crew.x), int(selected_crew.y))
+                    goal = (grid_x, grid_y)
+                    path = find_path(ship.decks[0], start, goal)
+                    if path:
+                        selected_crew.set_path(path)
 
         # Rendering
         screen.fill((0,0,0))
-        draw_ship(screen, ship)
-
-        # Add preview for buildable tiles
-        current_item = build_ui.build_system.get_current_item()
-        if current_item:
-            deck = ship.decks[0]
-            for y in range(deck.height):
-                for x in range(deck.width):
-                    if current_item.can_build(ship, x, y):
-                        preview_rect = pygame.Rect(
-                            x * TILE_SIZE, y * TILE_SIZE,
-                            TILE_SIZE, TILE_SIZE
-                        )
-                        # Draw semi-transparent highlight
-                        s = pygame.Surface((TILE_SIZE, TILE_SIZE))
-                        s.set_alpha(128)
-                        s.fill((100, 200, 255))  # Light blue highlight
-                        screen.blit(s, preview_rect)
-                        # Draw border
-                        pygame.draw.rect(screen, (100, 200, 255), preview_rect, 1)
-        
-        # Draw selected crew highlight
-        if selected_crew:
-            center_x = int(selected_crew.x * TILE_SIZE + TILE_SIZE // 2)
-            center_y = int(selected_crew.y * TILE_SIZE + TILE_SIZE // 2)
-            radius = TILE_SIZE // 2
-            pygame.draw.circle(screen, (255, 255, 255), (center_x, center_y), radius, 2)
-
-            # Optionally draw the path
-            if selected_crew.move_path:
-                path_points = [(int(selected_crew.x * TILE_SIZE + TILE_SIZE // 2), 
-                              int(selected_crew.y * TILE_SIZE + TILE_SIZE // 2))]
-                for x, y in selected_crew.move_path:
-                    path_points.append((int(x * TILE_SIZE + TILE_SIZE // 2), 
-                                     int(y * TILE_SIZE + TILE_SIZE // 2)))
-                pygame.draw.lines(screen, (255, 255, 0), False, path_points, 2)
+        draw_ship(screen, ship, camera, selected_crew)
         build_ui.draw(screen)
-        
         pygame.display.flip()
 
     pygame.quit()
