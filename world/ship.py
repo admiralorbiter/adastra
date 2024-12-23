@@ -62,6 +62,7 @@ class Ship:
         self.global_oxygen = max(0.0, min(self.oxygen_capacity, self.global_oxygen + oxygen_change))
 
     def add_crew_member(self, crew_member):
+        crew_member.ship = self  # Set the ship reference
         self.crew.append(crew_member)
 
     def expand_deck(self, direction: str, x: int = None, y: int = None) -> None:
@@ -141,3 +142,23 @@ class Ship:
                     if tile.object and isinstance(tile.object, StorageContainer):
                         total_food += tile.object.get_item_count(ItemType.FOOD)
         return total_food
+
+    def find_nearest_storage(self, x: int, y: int) -> tuple[StorageContainer, tuple[int, int]] | None:
+        """Find nearest storage container with food and its position"""
+        nearest_distance = float('inf')
+        nearest_storage = None
+        nearest_pos = None
+        
+        for deck in self.decks:
+            for tile_y in range(deck.height):
+                for tile_x in range(deck.width):
+                    tile = deck.tiles[tile_y][tile_x]
+                    if (tile.object and isinstance(tile.object, StorageContainer) 
+                        and tile.object.get_item_count(ItemType.FOOD) > 0):
+                        distance = ((tile_x - x) ** 2 + (tile_y - y) ** 2) ** 0.5
+                        if distance < nearest_distance:
+                            nearest_distance = distance
+                            nearest_storage = tile.object
+                            nearest_pos = (tile_x, tile_y)
+        
+        return (nearest_storage, nearest_pos) if nearest_storage else None

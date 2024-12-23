@@ -42,3 +42,9 @@ class StorageContainer(BaseObject):
         
     def get_item_count(self, item_type: ItemType) -> int:
         return sum(item.quantity for item in self.items if item.type == item_type)
+
+    def is_accessible_from(self, x, y, tile_x, tile_y):
+        """Check if object can be accessed from the given position"""
+        dx = abs(x - tile_x)
+        dy = abs(y - tile_y)
+        return dx + dy == 1  # Adjacent tile

@@ -3,6 +3,7 @@ from enum import Enum
 from world.objects import Bed
 from world.items import ItemType
 from world.objects import StorageContainer
+from world.pathfinding import find_path
 
 class Skill(Enum):
     ENGINEER = "Engineer"
@@ -13,13 +14,14 @@ class CrewMember:
     def __init__(self, name: str, skill: Skill):
         self.name = name
         self.skill = skill
+        self.ship = None  # Add ship reference
         
         # Add position tracking
         self.x = 0
         self.y = 0
         
         # Basic needs (0-100 scale)
-        self.hunger = 100  # 100 = full, 0 = starving
+        self.hunger = 51  # Changed from 100 to 51
         self.sleep = 100   # 100 = well-rested, 0 = exhausted
         self.oxygen = 100  # 100 = normal, 0 = critical
         
@@ -32,30 +34,34 @@ class CrewMember:
         self.target_x = None
         self.target_y = None
         
-        self.current_action = None  # Add this to track current action
+        self.current_action = None  # Initialize current_action
         self.target_object = None   # Add this to track target object
 
     def update(self, dt):
-        # Gradually decrease needs over time
-        self.hunger = max(0, self.hunger - 0.01)
-        self.sleep = max(0, self.sleep - 0.01)
-        
-        # Calculate mood based on needs
-        self.mood = (self.hunger + self.sleep + self.oxygen) / 3
-        
-        # Update work efficiency based on mood
-        if self.mood > 75:
-            self.work_efficiency = 1.0
-        elif self.mood > 50:
-            self.work_efficiency = 0.8
-        elif self.mood > 25:
-            self.work_efficiency = 0.6
-        else:
-            self.work_efficiency = 0.4
-        
-        # Add this after the mood calculation
+        # Skip updates if currently sleeping
         if self.current_action == "sleeping":
             self.rest()
+            return
+
+        # Gradually decrease needs over time
+        self.hunger = max(0, self.hunger - 0.1 * dt)  # Increased hunger rate
+        self.sleep = max(0, self.sleep - 0.01 * dt)
+        
+        # Check if needs food and not already heading to food
+        if self.hunger < 50 and not self.current_action == "getting_food":
+            # Only look for food if not moving or doing other actions
+            if not self.move_path and not self.target_object:
+                nearest = self.ship.find_nearest_storage(int(self.x), int(self.y))
+                if nearest:
+                    storage, pos = nearest
+                    # Create path to storage
+                    start = (int(self.x), int(self.y))
+                    path = find_path(self.ship.decks[0], start, pos)
+                    if path:
+                        self.target_object = storage
+                        self.current_action = "getting_food"
+                        self.set_path(path)
+
         
         # Handle movement and actions
         if self.move_path:
@@ -79,7 +85,12 @@ class CrewMember:
                 if not self.move_path and self.target_object:
                     if isinstance(self.target_object, Bed):
                         self.current_action = "sleeping"
-                        self.rest()  # Call rest every update while at bed
+                        self.rest()
+                    elif isinstance(self.target_object, StorageContainer):
+                        if self.current_action == "getting_food":
+                            self.eat_from_storage(self.target_object)
+                            self.current_action = None
+                            self.target_object = None
             else:
                 # Move towards target
                 self.x += (dx / distance) * move_distance
@@ -97,6 +108,6 @@ class CrewMember:
     def eat_from_storage(self, storage: StorageContainer):
         food = storage.remove_item(ItemType.FOOD)
         if food:
-            self.eat()
+            self.hunger = min(100, self.hunger + 50)  # Increased food benefit
             return True
         return False
