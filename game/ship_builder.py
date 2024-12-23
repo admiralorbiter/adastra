@@ -4,6 +4,7 @@ from world.ship import Ship
 from world.modules import LifeSupportModule, ReactorModule
 from world.objects import Bed, StorageContainer
 from models.crew import CrewMember, Skill
+from world.items import FoodItem
 
 def create_basic_ship(cable_system=None):
     main_deck = Deck(width=10, height=10, name="Main Deck")
@@ -32,6 +33,8 @@ def create_basic_ship(cable_system=None):
     main_deck.tiles[4][4].object = bed
 
     storage = StorageContainer()
+    # Add initial food supply (50 food rations)
+    storage.add_item(FoodItem(quantity=50))
     main_deck.tiles[5][4].object = storage
 
     # Create room from all non-wall tiles

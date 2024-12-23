@@ -36,7 +36,7 @@ class ResourceUI:
             "Hunger",
             avg_hunger,
             100,
-            f"Crew: {len(ship.crew)}",
+            f"Food: {ship.get_total_food()}",
             x, y + bar_height + bar_spacing,
             bar_width,
             bar_height
@@ -49,7 +49,7 @@ class ResourceUI:
             avg_sleep,
             100,
             f"Efficiency: {int(avg_sleep)}%",
-            x, y + (bar_height + bar_spacing) * 2,  # Position below hunger bar
+            x, y + (bar_height + bar_spacing) * 2,
             bar_width,
             bar_height
         )

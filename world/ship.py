@@ -1,3 +1,5 @@
+from world.items import ItemType
+from world.objects import StorageContainer
 from world.tile import Tile
 
 
@@ -129,3 +131,13 @@ class Ship:
         # Each floor tile contributes to oxygen capacity
         self.oxygen_capacity = floor_tiles * 10  # 10 units of O2 per floor tile
         self.global_oxygen = self.oxygen_capacity  # Start with full O2
+
+    def get_total_food(self):
+        total_food = 0
+        for deck in self.decks:
+            for y in range(deck.height):
+                for x in range(deck.width):
+                    tile = deck.tiles[y][x]
+                    if tile.object and isinstance(tile.object, StorageContainer):
+                        total_food += tile.object.get_item_count(ItemType.FOOD)
+        return total_food

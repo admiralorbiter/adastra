@@ -1,6 +1,8 @@
 from enum import Enum
 
 from world.objects import Bed
+from world.items import ItemType
+from world.objects import StorageContainer
 
 class Skill(Enum):
     ENGINEER = "Engineer"
@@ -91,3 +93,10 @@ class CrewMember:
 
     def set_path(self, path):
         self.move_path = path[1:]  # Skip first position (current position) 
+
+    def eat_from_storage(self, storage: StorageContainer):
+        food = storage.remove_item(ItemType.FOOD)
+        if food:
+            self.eat()
+            return True
+        return False
