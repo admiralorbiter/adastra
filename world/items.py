@@ -3,6 +3,7 @@ from enum import Enum, auto
 
 class ItemType(Enum):
     FOOD = auto()
+    METAL = auto()
     # Add more types as needed
 
 @dataclass
@@ -14,3 +15,7 @@ class Item:
 class FoodItem(Item):
     def __init__(self, quantity=1):
         super().__init__(ItemType.FOOD, "Food Ration", quantity) 
+
+class MetalItem(Item):
+    def __init__(self, quantity=1):
+        super().__init__(ItemType.METAL, "Metal", quantity)
