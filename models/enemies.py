@@ -85,10 +85,12 @@ class MeleeEnemy(Enemy):
         self.damage = 15  # Higher damage but must be close
         self.move_speed = 1.8  # Faster movement to close distance
         self.health = 120  # More health since they need to get close
+        self.max_health = 120  # Need to set max_health to match initial health 
 
 class RangedEnemy(Enemy):
     def __init__(self, name: str):
         super().__init__(name, EnemyType.RANGED)
         self.damage = 8  # Lower damage but can attack from range
         self.move_speed = 1.2  # Slower movement
-        self.health = 80  # Less health since they can attack from range 
+        self.health = 80  # Less health since they can attack from range
+        self.max_health = 80  # Need to set max_health to match initial health 
