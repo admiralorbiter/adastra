@@ -5,7 +5,7 @@ from world.modules import LifeSupportModule, ReactorModule, EngineModule
 from world.objects import Bed, StorageContainer, Tank
 from rendering.asset_loader import AssetLoader
 
-TILE_SIZE = 32
+TILE_SIZE = 32  # Base tile size
 
 class ShipRenderer:
     @staticmethod
@@ -14,7 +14,7 @@ class ShipRenderer:
             return
 
         deck = ship.decks[0]
-        tile_size = int(32 * camera.zoom)  # Scale tile size based on zoom level
+        tile_size = int(TILE_SIZE * camera.zoom)  # Scale tile size based on zoom level
         
         # Get current build item if in build mode and build_ui exists
         current_item = build_ui.build_system.get_current_item() if build_ui else None
@@ -25,36 +25,36 @@ class ShipRenderer:
         for y in range(deck.height):
             for x in range(deck.width):
                 tile = deck.tiles[y][x]
-                screen_x, screen_y = camera.world_to_screen(x * 32, y * 32)
+                screen_x, screen_y = camera.world_to_screen(x * TILE_SIZE, y * TILE_SIZE)
                 rect = pygame.Rect(screen_x, screen_y, tile_size, tile_size)
                 
                 # Draw the tile
                 color = (200, 200, 200)  # Default floor color
-                
                 if tile.wall:
                     color = (50, 50, 50)  # Wall color
-                elif tile.module:
-                    # Differentiate modules by type:
-                    if isinstance(tile.module, LifeSupportModule):
-                        # Red if unpowered, blue if powered
-                        if tile.module.is_powered():
-                            color = (100, 100, 255)  # Blueish for powered Life Support
-                        else:
-                            color = (255, 100, 100)  # Reddish for unpowered Life Support
-                    elif isinstance(tile.module, ReactorModule):
-                        color = (255, 140, 0)  # Orange for Reactor
-                    elif isinstance(tile.module, EngineModule):
-                        color = (50, 255, 50)  # Green for Engine
-                        if tile.module.is_powered():
-                            color = (100, 255, 100)  # Lighter green when powered
-                        else:
-                            color = (255, 100, 100)  # Red when unpowered
-                elif tile.object:
-                    # Differentiate objects by class:
+                pygame.draw.rect(screen, color, rect)
+                pygame.draw.rect(screen, (0, 0, 0), rect, 1)  # Border
+                
+                # Then draw objects and modules on top
+                if tile.object:
                     if isinstance(tile.object, Bed):
-                        color = (139, 69, 19)  # Brown for bed
+                        image = asset_loader.get_image('bed')
+                        if image:
+                            scaled_image = pygame.transform.scale(image, (tile_size, tile_size))
+                            screen.blit(scaled_image, (screen_x, screen_y))
+                        else:
+                            color = (139, 69, 19)  # Brown fallback for bed
+                            pygame.draw.rect(screen, color, rect)
+                            
                     elif isinstance(tile.object, StorageContainer):
-                        color = (255, 255, 0)  # Yellow for storage
+                        image = asset_loader.get_image('container')
+                        if image:
+                            scaled_image = pygame.transform.scale(image, (tile_size, tile_size))
+                            screen.blit(scaled_image, (screen_x, screen_y))
+                        else:
+                            color = (255, 255, 0)  # Yellow fallback for storage
+                            pygame.draw.rect(screen, color, rect)
+                            
                     elif isinstance(tile.object, Tank):
                         # Draw tank with different color based on contents
                         if tile.object.get_amount(ItemType.OXYGEN) > 0:
@@ -63,9 +63,10 @@ class ShipRenderer:
                             color = (0, 191, 255)  # Light blue for water
                         else:
                             color = (150, 150, 150)  # Gray for empty tank
-
-                pygame.draw.rect(screen, color, rect)
-                pygame.draw.rect(screen, (0, 0, 0), rect, 1)
+                        pygame.draw.rect(screen, color, rect)
+                        
+                    # Draw border for objects
+                    pygame.draw.rect(screen, (0, 0, 0), rect, 1)
 
                 # Draw modules with scaled images
                 if tile.module:
@@ -116,8 +117,8 @@ class ShipRenderer:
         # Draw crew members with scaled size
         for crew_member in ship.crew:
             screen_x, screen_y = camera.world_to_screen(
-                crew_member.x * 32 + 16,
-                crew_member.y * 32 + 16
+                crew_member.x * TILE_SIZE + TILE_SIZE // 2,
+                crew_member.y * TILE_SIZE + TILE_SIZE // 2
             )
             radius = int((TILE_SIZE//3) * camera.zoom)
             pygame.draw.circle(screen, (0, 255, 0), (screen_x, screen_y), radius)
@@ -125,8 +126,8 @@ class ShipRenderer:
         # Draw selected crew highlight with scaled size
         if selected_crew:
             screen_x, screen_y = camera.world_to_screen(
-                selected_crew.x * 32 + 16,
-                selected_crew.y * 32 + 16
+                selected_crew.x * TILE_SIZE + TILE_SIZE // 2,
+                selected_crew.y * TILE_SIZE + TILE_SIZE // 2
             )
             radius = int((TILE_SIZE//2) * camera.zoom)
             pygame.draw.circle(screen, (255, 255, 255), (screen_x, screen_y), max(1, int(2 * camera.zoom)))
@@ -162,7 +163,7 @@ class ShipRenderer:
         for y in range(deck.height):
             for x in range(deck.width):
                 tile = deck.tiles[y][x]
-                screen_x, screen_y = camera.world_to_screen(x * 32, y * 32)
+                screen_x, screen_y = camera.world_to_screen(x * TILE_SIZE, y * TILE_SIZE)
                 
                 # Highlight beds if crew is selected
                 if selected_crew and tile.object and isinstance(tile.object, Bed):
@@ -171,7 +172,7 @@ class ShipRenderer:
         
         # Draw crew members
         for crew in ship.crew:
-            screen_x, screen_y = camera.world_to_screen(crew.x * 32, crew.y * 32)
+            screen_x, screen_y = camera.world_to_screen(crew.x * TILE_SIZE, crew.y * TILE_SIZE)
             color = (0, 255, 0)  # Default color
             if crew == selected_crew:
                 # Draw selection highlight

@@ -21,10 +21,19 @@ class AssetLoader:
         # Load module images
         self._images['life_support'] = self.load_and_scale_image('images/o2.png')
         self._images['reactor'] = self.load_and_scale_image('images/reactor.png')
+        # Add new object images - don't scale them initially
+        self._images['bed'] = self.load_and_scale_image('images/bed.png', scale=False)
+        self._images['container'] = self.load_and_scale_image('images/container.png', scale=False)
 
-    def load_and_scale_image(self, path):
-        image = pygame.image.load(path)
-        return pygame.transform.scale(image, (32, 32))  # Scale to TILE_SIZE
+    def load_and_scale_image(self, path, scale=True):
+        try:
+            image = pygame.image.load(path)
+            if scale:
+                return pygame.transform.scale(image, (32, 32))
+            return image
+        except pygame.error as e:
+            print(f"Warning: Could not load image {path}: {e}")
+            return None
 
     def get_image(self, key):
         return self._images.get(key) 
