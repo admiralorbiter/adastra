@@ -12,7 +12,7 @@ class BaseModule:
         return self.power_available >= self.power_required
 
 class LifeSupportModule(BaseModule):
-    def __init__(self, name="Life Support Unit", oxygen_rate=0.5):
+    def __init__(self, name="Life Support Unit", oxygen_rate=1):
         super().__init__(name)
         self.oxygen_rate = oxygen_rate
         self.active = True

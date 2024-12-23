@@ -1,6 +1,7 @@
 from enum import Enum, auto
 from dataclasses import dataclass
 
+from world.modules import LifeSupportModule, ReactorModule
 from world.objects import Bed, StorageContainer
 from world.tile import Tile
 
@@ -10,6 +11,7 @@ class BuildMode(Enum):
     WALL = auto()
     CABLE = auto()
     OBJECT = auto()
+    MODULE = auto()
 
 @dataclass
 class BuildableItem:
@@ -56,6 +58,14 @@ class BuildableItem:
             return False
             
         deck = ship.decks[0]
+        
+        # Handle module placement
+        if self.name == "Life Support":
+            deck.tiles[y][x].module = LifeSupportModule()
+            return True
+        elif self.name == "Reactor":
+            deck.tiles[y][x].module = ReactorModule()
+            return True
         
         # Handle wall placement with expansion
         if self.name == "Basic Wall":
@@ -121,6 +131,10 @@ class BuildSystem:
             BuildMode.OBJECT: BuildCategory(BuildMode.OBJECT, [
                 BuildableItem("Bed", "A place for crew to rest", (139, 69, 19)),
                 BuildableItem("Storage Container", "Store items and resources", (160, 82, 45))
+            ]),
+            BuildMode.MODULE: BuildCategory(BuildMode.MODULE, [
+                BuildableItem("Life Support", "Generates oxygen for the ship", (100, 100, 255)),
+                BuildableItem("Reactor", "Generates power for the ship", (255, 140, 0))
             ])
         }
         self.active_category: BuildCategory | None = None

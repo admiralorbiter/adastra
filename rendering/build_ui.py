@@ -39,6 +39,13 @@ class BuildUI:
             self.panel_width, 
             100
         )
+        self.show_module_menu = False
+        self.module_menu_rect = pygame.Rect(
+            self.x, 
+            self.y + self.panel_height + 10, 
+            self.panel_width, 
+            100
+        )
 
     def handle_click(self, pos: tuple[int, int]) -> bool:
         # Handle main button clicks
@@ -47,19 +54,41 @@ class BuildUI:
                 self.build_system.set_mode(mode)
                 button.active = (self.build_system.current_mode == mode)
                 
-                # Show object menu when Object mode is selected
+                # Show appropriate menu based on mode
                 if mode == BuildMode.OBJECT:
                     self.show_object_menu = button.active
+                    self.show_module_menu = False
+                    self.selected_item = None
+                elif mode == BuildMode.MODULE:
+                    self.show_module_menu = button.active
+                    self.show_object_menu = False
                     self.selected_item = None
                 else:
                     self.show_object_menu = False
+                    self.show_module_menu = False
                 
                 # Deactivate other buttons
                 for other_button in self.buttons.values():
                     if other_button != button:
                         other_button.active = False
                 return True
-                
+
+        # Handle module menu clicks if visible
+        if self.show_module_menu:
+            category = self.build_system.categories[BuildMode.MODULE]
+            item_height = 30
+            for i, item in enumerate(category.items):
+                item_rect = pygame.Rect(
+                    self.module_menu_rect.x,
+                    self.module_menu_rect.y + i * item_height,
+                    self.module_menu_rect.width,
+                    item_height
+                )
+                if item_rect.collidepoint(pos):
+                    self.selected_item = item
+                    category.selected_item = item
+                    return True
+
         # Handle object menu clicks if visible
         if self.show_object_menu:
             category = self.build_system.categories[BuildMode.OBJECT]
@@ -75,7 +104,7 @@ class BuildUI:
                     self.selected_item = item
                     category.selected_item = item
                     return True
-                    
+
         return False
 
     def draw(self, screen: pygame.Surface) -> None:
@@ -148,6 +177,45 @@ class BuildUI:
                     self.object_menu_rect.x,
                     self.object_menu_rect.y + i * item_height,
                     self.object_menu_rect.width,
+                    item_height
+                )
+                
+                # Highlight selected item
+                if item == self.selected_item:
+                    pygame.draw.rect(screen, (60, 60, 60), item_rect)
+                
+                # Draw item icon
+                icon_rect = pygame.Rect(
+                    item_rect.x + 5,
+                    item_rect.y + 5,
+                    20,
+                    20
+                )
+                pygame.draw.rect(screen, item.icon_color, icon_rect)
+                
+                # Draw item name
+                text = font.render(item.name, True, (200, 200, 200))
+                screen.blit(text, (icon_rect.right + 10, item_rect.centery - text.get_height()//2))
+
+        # Draw module menu if visible
+        if self.show_module_menu:
+            # Draw menu background
+            s = pygame.Surface((self.module_menu_rect.width, self.module_menu_rect.height))
+            s.set_alpha(128)
+            s.fill((30, 30, 30))
+            screen.blit(s, (self.module_menu_rect.x, self.module_menu_rect.y))
+            
+            # Draw menu border
+            pygame.draw.rect(screen, (100, 200, 255), self.module_menu_rect, 2)
+            
+            # Draw module items
+            font = pygame.font.Font(None, 24)
+            item_height = 30
+            for i, item in enumerate(self.build_system.categories[BuildMode.MODULE].items):
+                item_rect = pygame.Rect(
+                    self.module_menu_rect.x,
+                    self.module_menu_rect.y + i * item_height,
+                    self.module_menu_rect.width,
                     item_height
                 )
                 
