@@ -5,7 +5,7 @@ class GameConstants:
         if GameConstants._instance is not None:
             raise Exception("GameConstants is a singleton!")
         GameConstants._instance = self
-        self._tile_size = 64  # Default tile size
+        self._tile_size = 32  # Default tile size
         
     @staticmethod
     def get_instance():

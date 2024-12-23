@@ -26,17 +26,22 @@ class BuildableItem:
             return False
         deck = ship.decks[0]
         
-        # For wall, allow building within bounds or one tile beyond
-        if self.name == "Basic Wall":
+        # For floor and wall, allow building within bounds or one tile beyond
+        if self.name in ["Basic Floor", "Basic Wall"]:
             # Allow building one tile beyond in any direction
             if not (-1 <= x <= deck.width and -1 <= y <= deck.height):
                 return False
             
-            # If within bounds, check if tile is empty
+            # If within bounds, check if tile is empty or (for floor) is a wall
             if 0 <= x < deck.width and 0 <= y < deck.height:
                 tile = deck.tiles[y][x]
-                if tile.wall or tile.module or tile.object:
-                    return False
+                if self.name == "Basic Floor":
+                    # Can place floor on wall tiles
+                    if tile.module or tile.object:
+                        return False
+                else:  # Basic Wall
+                    if tile.wall or tile.module or tile.object:
+                        return False
                 
             # Must be adjacent to existing tile
             adjacent_coords = [
@@ -44,6 +49,11 @@ class BuildableItem:
                     (x+1, y), (x-1, y), (x, y+1), (x, y-1)
                 ] if 0 <= ax < deck.width and 0 <= ay < deck.height
             ]
+            
+            # For floor, must be adjacent to existing floor or wall
+            if self.name == "Basic Floor":
+                return any(not deck.tiles[ay][ax].wall for ax, ay in adjacent_coords)
+            # For wall, just needs to be adjacent to any tile
             return len(adjacent_coords) > 0
         
         # Special handling for Engine - must be built on walls
@@ -122,11 +132,36 @@ class BuildableItem:
             deck.tiles[grid_y][grid_x].object = Bed()
             return True
         
-        # Handle other building types...
+        # Handle floor placement with automatic wall creation
         elif self.name == "Basic Floor":
             if not deck.tiles[grid_y][grid_x]:
                 deck.tiles[grid_y][grid_x] = Tile(x=grid_x, y=grid_y)
             deck.tiles[grid_y][grid_x].wall = False
+            
+            # Check for needed expansion in each direction
+            if grid_x == deck.width - 1:  # Right edge
+                ship.expand_deck("right", y=grid_y)
+            elif grid_x == 0:  # Left edge
+                ship.expand_deck("left", y=grid_y)
+            
+            if grid_y == deck.height - 1:  # Bottom edge
+                ship.expand_deck("down", x=grid_x)
+            elif grid_y == 0:  # Top edge
+                ship.expand_deck("up", x=grid_x)
+            
+            # Create walls in empty space around the edges of the ship
+            for y in range(deck.height):
+                if not deck.tiles[y][0].wall and not deck.tiles[y][0].module and not deck.tiles[y][0].object:
+                    deck.tiles[y][0].wall = True
+                if not deck.tiles[y][deck.width-1].wall and not deck.tiles[y][deck.width-1].module and not deck.tiles[y][deck.width-1].object:
+                    deck.tiles[y][deck.width-1].wall = True
+            
+            for x in range(deck.width):
+                if not deck.tiles[0][x].wall and not deck.tiles[0][x].module and not deck.tiles[0][x].object:
+                    deck.tiles[0][x].wall = True
+                if not deck.tiles[deck.height-1][x].wall and not deck.tiles[deck.height-1][x].module and not deck.tiles[deck.height-1][x].object:
+                    deck.tiles[deck.height-1][x].wall = True
+            
             return True
         elif self.name == "Power Cable":
             ship.cable_system.add_cable(grid_x, grid_y)

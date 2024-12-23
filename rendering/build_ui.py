@@ -132,14 +132,19 @@ class BuildUI:
             label_y = button.rect.centery - label.get_height() // 2
             screen.blit(label, (label_x, label_y))
 
-        # Draw cable mode highlights if active
-        if self.build_system.current_mode == BuildMode.CABLE:
+        # Draw build mode highlights if active
+        current_item = self.build_system.get_current_item()
+        if current_item and self.build_system.current_mode in [BuildMode.FLOOR, BuildMode.WALL, BuildMode.CABLE]:
             mouse_x, mouse_y = pygame.mouse.get_pos()
             grid_x, grid_y = self.game_state.camera.screen_to_grid(mouse_x, mouse_y)
 
+            # Check if position is valid for building
+            can_build = current_item.can_build(self.game_state.ship, grid_x, grid_y)
+            highlight_color = (0, 255, 0, 128) if can_build else (255, 0, 0, 128)
+
             # Only highlight if mouse is over valid grid position
-            if (0 <= grid_x < self.game_state.ship.decks[0].width and 
-                0 <= grid_y < self.game_state.ship.decks[0].height):
+            if (-1 <= grid_x <= self.game_state.ship.decks[0].width and 
+                -1 <= grid_y <= self.game_state.ship.decks[0].height):
                 
                 # Convert grid position back to screen coordinates
                 screen_x, screen_y = self.game_state.camera.grid_to_screen(grid_x, grid_y)
@@ -147,12 +152,13 @@ class BuildUI:
                 
                 # Create highlight surface with proper scaling
                 highlight = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)
-                highlight.fill(self.highlight_color)
+                highlight.fill(highlight_color)
                 screen.blit(highlight, (screen_x, screen_y))
                 
                 # Draw scaled border
                 border_width = max(1, int(self.game_state.camera.zoom))
-                pygame.draw.rect(screen, (100, 200, 255), 
+                border_color = (0, 255, 0) if can_build else (255, 0, 0)
+                pygame.draw.rect(screen, border_color, 
                                pygame.Rect(screen_x, screen_y, tile_size, tile_size), 
                                border_width)
 
