@@ -1,5 +1,7 @@
 from enum import Enum
 
+from world.objects import Bed
+
 class Skill(Enum):
     ENGINEER = "Engineer"
     PILOT = "Pilot"
@@ -27,11 +29,14 @@ class CrewMember:
         self.move_speed = 2.0  # Tiles per second
         self.target_x = None
         self.target_y = None
+        
+        self.current_action = None  # Add this to track current action
+        self.target_object = None   # Add this to track target object
 
     def update(self, dt):
         # Gradually decrease needs over time
         self.hunger = max(0, self.hunger - 0.01)
-        self.sleep = max(0, self.sleep - 0.05)
+        self.sleep = max(0, self.sleep - 0.01)
         
         # Calculate mood based on needs
         self.mood = (self.hunger + self.sleep + self.oxygen) / 3
@@ -46,7 +51,11 @@ class CrewMember:
         else:
             self.work_efficiency = 0.4
         
-        # Handle movement
+        # Add this after the mood calculation
+        if self.current_action == "sleeping":
+            self.rest()
+        
+        # Handle movement and actions
         if self.move_path:
             # Get the next target position
             target = self.move_path[0]
@@ -63,6 +72,12 @@ class CrewMember:
                 # Reached the next point in path
                 self.x, self.y = target
                 self.move_path.pop(0)
+                
+                # If we've reached our destination and have a target object
+                if not self.move_path and self.target_object:
+                    if isinstance(self.target_object, Bed):
+                        self.current_action = "sleeping"
+                        self.rest()  # Call rest every update while at bed
             else:
                 # Move towards target
                 self.x += (dx / distance) * move_distance

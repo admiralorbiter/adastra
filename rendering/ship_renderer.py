@@ -131,3 +131,34 @@ class ShipRenderer:
                     )
                     path_points.append((screen_x, screen_y))
                 pygame.draw.lines(screen, (255, 255, 0), False, path_points, 2)
+
+        # Draw bed highlight if crew is selected
+        if selected_crew:
+            for y in range(deck.height):
+                for x in range(deck.width):
+                    tile = deck.tiles[y][x]
+                    if tile and tile.object and isinstance(tile.object, Bed):
+                        screen_x, screen_y = camera.world_to_screen(x * TILE_SIZE, y * TILE_SIZE)
+                        tile_size = int(TILE_SIZE * camera.zoom)
+                        pygame.draw.rect(screen, (0, 255, 255, 128), 
+                                       (screen_x, screen_y, tile_size, tile_size), 2)
+
+        # Draw base tiles first
+        for y in range(deck.height):
+            for x in range(deck.width):
+                tile = deck.tiles[y][x]
+                screen_x, screen_y = camera.world_to_screen(x * 32, y * 32)
+                
+                # Highlight beds if crew is selected
+                if selected_crew and tile.object and isinstance(tile.object, Bed):
+                    pygame.draw.rect(screen, (0, 255, 255), 
+                                   (screen_x, screen_y, tile_size, tile_size), 2)
+        
+        # Draw crew members
+        for crew in ship.crew:
+            screen_x, screen_y = camera.world_to_screen(crew.x * 32, crew.y * 32)
+            color = (0, 255, 0)  # Default color
+            if crew == selected_crew:
+                # Draw selection highlight
+                pygame.draw.rect(screen, (255, 255, 0),
+                               (screen_x, screen_y, tile_size, tile_size), 2)

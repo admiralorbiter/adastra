@@ -6,9 +6,9 @@ class ResourceUI:
         self.small_font = pygame.font.Font(None, 24)
         
     def draw_oxygen_status(self, screen, ship, x, y):
-        # Draw O2 bar background
-        bar_width = 160  # Made slightly smaller
-        bar_height = 24  # Made slightly smaller
+        bar_width = 160
+        bar_height = 24
+        bar_spacing = 15  # Space between bars
         
         # Draw oxygen bar
         self._draw_resource_bar(
@@ -25,17 +25,31 @@ class ResourceUI:
         # Calculate average crew hunger
         if ship.crew:
             avg_hunger = sum(crew.hunger for crew in ship.crew) / len(ship.crew)
+            avg_sleep = sum(crew.sleep for crew in ship.crew) / len(ship.crew)
         else:
             avg_hunger = 100
+            avg_sleep = 100
             
-        # Draw hunger bar below oxygen
+        # Draw hunger bar
         self._draw_resource_bar(
             screen,
             "Hunger",
-            avg_hunger,  # Current hunger level
-            100,        # Maximum hunger level
+            avg_hunger,
+            100,
             f"Crew: {len(ship.crew)}",
-            x, y + bar_height + 15,  # Positioned below oxygen bar
+            x, y + bar_height + bar_spacing,
+            bar_width,
+            bar_height
+        )
+        
+        # Draw sleep bar
+        self._draw_resource_bar(
+            screen,
+            "Sleep",
+            avg_sleep,
+            100,
+            f"Efficiency: {int(avg_sleep)}%",
+            x, y + (bar_height + bar_spacing) * 2,  # Position below hunger bar
             bar_width,
             bar_height
         )

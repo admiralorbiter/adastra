@@ -10,8 +10,10 @@ class Tile:
         self.connected_modules = set()  # Track connected modules through cables
 
     def is_walkable(self):
+        # Base tiles are walkable if they're not walls
         if self.wall:
             return False
-        if self.object and getattr(self.object, 'solid', False):
+        # Objects might block movement unless they're walkable
+        if self.object and self.object.solid and not self.object.walkable:
             return False
         return True

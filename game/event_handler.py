@@ -1,6 +1,7 @@
 import pygame
 from world import camera, ship
 from world.pathfinding import find_path
+from world.objects import Bed
 
 TILE_SIZE = 32
 
@@ -49,9 +50,9 @@ class EventHandler:
         
         # Handle UI clicks first
         if self.game_state.build_ui.handle_click((mouse_x, mouse_y)):
-            return  # Return early if UI handled the click
+            return
         
-        # Convert screen coordinates to world coordinates once
+        # Convert screen coordinates to world coordinates
         world_x, world_y = self.game_state.camera.screen_to_world(mouse_x, mouse_y)
         grid_x, grid_y = int(world_x // TILE_SIZE), int(world_y // TILE_SIZE)
         
@@ -71,7 +72,7 @@ class EventHandler:
                     current_item.build(self.game_state.ship, grid_x, grid_y)
                     return True
             
-            # Handle crew selection and movement
+            # Handle crew selection
             clicked_on_crew = False
             for crew in self.game_state.ship.crew:
                 if int(crew.x) == grid_x and int(crew.y) == grid_y:
@@ -79,18 +80,28 @@ class EventHandler:
                     clicked_on_crew = True
                     break
             
-            # Handle crew movement if we have a selected crew
+            # Handle crew movement or bed interaction if we have a selected crew
             if self.game_state.selected_crew and not clicked_on_crew:
-                if (grid_x < self.game_state.ship.decks[0].width and 
-                    grid_y < self.game_state.ship.decks[0].height and 
-                    self.game_state.ship.decks[0].tiles[grid_y][grid_x].is_walkable()):
-                    start = (int(self.game_state.selected_crew.x), int(self.game_state.selected_crew.y))
-                    goal = (grid_x, grid_y)
-                    path = find_path(self.game_state.ship.decks[0], start, goal)
-                    if path:
-                        self.game_state.selected_crew.set_path(path)
-                
-                self.game_state.selected_crew = None
+                deck = self.game_state.ship.decks[0]
+                if (grid_x < deck.width and grid_y < deck.height):
+                    tile = deck.tiles[grid_y][grid_x]
+                    
+                    # Check if clicked on a bed
+                    if tile.object and isinstance(tile.object, Bed):
+                        start = (int(self.game_state.selected_crew.x), int(self.game_state.selected_crew.y))
+                        goal = (grid_x, grid_y)
+                        path = find_path(deck, start, goal)
+                        if path:
+                            self.game_state.selected_crew.target_object = tile.object
+                            self.game_state.selected_crew.set_path(path)
+                    # Regular movement
+                    elif tile.is_walkable():
+                        start = (int(self.game_state.selected_crew.x), int(self.game_state.selected_crew.y))
+                        goal = (grid_x, grid_y)
+                        path = find_path(deck, start, goal)
+                        if path:
+                            self.game_state.selected_crew.target_object = None  # Clear any previous target
+                            self.game_state.selected_crew.set_path(path)
 
     def handle_mouse_motion(self, event):
         if self.game_state.cable_view_active:
@@ -105,3 +116,48 @@ class EventHandler:
         if event.button == 1 and self.game_state.cable_view_active:
             self.game_state.cable_system.end_drag()
             self.game_state.cable_view_active = False
+
+    def check_crew_click(self, grid_x, grid_y):
+        if not self.game_state.ship.crew:
+            return None
+            
+        for crew in self.game_state.ship.crew:
+            if int(crew.x) == grid_x and int(crew.y) == grid_y:
+                return crew
+        return None
+
+    def check_object_click(self, grid_x, grid_y):
+        if not self.game_state.ship.decks:
+            return None
+            
+        deck = self.game_state.ship.decks[0]
+        if 0 <= grid_x < deck.width and 0 <= grid_y < deck.height:
+            tile = deck.tiles[grid_y][grid_x]
+            return tile.object if tile and hasattr(tile, 'object') else None
+        return None
+
+    def handle_click(self, mouse_pos):
+        # Convert screen coordinates to world coordinates
+        world_x, world_y = self.game_state.camera.screen_to_world(*mouse_pos)
+        grid_x = int(world_x / 32)  # Assuming TILE_SIZE = 32
+        grid_y = int(world_y / 32)
+        
+        # First, check if we clicked on a crew member
+        for crew in self.game_state.ship.crew:
+            crew_grid_x = int(crew.x)
+            crew_grid_y = int(crew.y)
+            if crew_grid_x == grid_x and crew_grid_y == grid_y:
+                self.game_state.selected_crew = crew
+                return
+        
+        # If we have a selected crew member, check if we clicked on a bed
+        if self.game_state.selected_crew:
+            deck = self.game_state.ship.decks[0]
+            if 0 <= grid_x < deck.width and 0 <= grid_y < deck.height:
+                tile = deck.tiles[grid_y][grid_x]
+                if tile.object and isinstance(tile.object, Bed):
+                    # Create a simple path (direct path for now)
+                    crew = self.game_state.selected_crew
+                    path = [(crew.x, crew.y), (grid_x, grid_y)]
+                    crew.target_object = tile.object
+                    crew.set_path(path)
