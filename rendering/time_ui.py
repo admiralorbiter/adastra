@@ -15,7 +15,11 @@ class TimeUI:
         text_surface = self.font.render(time_text, True, (255, 255, 255))
         screen.blit(text_surface, (x + 10, y + 5))
         
-        # Draw speed indicator
-        speed_text = f"{'⏸' if time_manager.paused else '⏵'} {time_manager.time_scale}x"
+        # Draw speed indicator with pause state
+        if time_manager.paused:
+            speed_text = "⏸ PAUSED"
+        else:
+            speed_text = f"⏵ {time_manager.time_scale:.1f}x"
+            
         speed_surface = self.small_font.render(speed_text, True, (200, 200, 200))
         screen.blit(speed_surface, (x + 10, y + 30)) 
