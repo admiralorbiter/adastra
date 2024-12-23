@@ -1,5 +1,5 @@
 import pygame
-from models.build import BuildMode, BuildSystem
+from models.builders.build import BuildMode, BuildSystem
 from utils.constants import GameConstants
 
 class BuildUI:
