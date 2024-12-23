@@ -28,3 +28,15 @@ class ReactorModule(BaseModule):
         super().__init__(name)
         self.power_output = power_output
         self.power_available = power_output  # Reactors generate their own power
+
+class EngineModule(BaseModule):
+    def __init__(self, name="Basic Engine", thrust_power=5):
+        super().__init__(name)
+        self.thrust_power = thrust_power
+        self.power_required = 3  # Requires 3 power to operate
+        self.active = True
+
+    @property
+    def thrust_output(self):
+        # Only produce thrust if powered
+        return self.thrust_power if self.active and self.is_powered() else 0

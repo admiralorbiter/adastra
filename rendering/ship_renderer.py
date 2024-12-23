@@ -1,6 +1,6 @@
 import pygame
 
-from world.modules import LifeSupportModule, ReactorModule
+from world.modules import LifeSupportModule, ReactorModule, EngineModule
 from world.objects import Bed, StorageContainer
 from rendering.asset_loader import AssetLoader
 
@@ -42,6 +42,12 @@ class ShipRenderer:
                             color = (255, 100, 100)  # Reddish for unpowered Life Support
                     elif isinstance(tile.module, ReactorModule):
                         color = (255, 140, 0)  # Orange for Reactor
+                    elif isinstance(tile.module, EngineModule):
+                        color = (50, 255, 50)  # Green for Engine
+                        if tile.module.is_powered():
+                            color = (100, 255, 100)  # Lighter green when powered
+                        else:
+                            color = (255, 100, 100)  # Red when unpowered
                 elif tile.object:
                     # Differentiate objects by class:
                     if isinstance(tile.object, Bed):

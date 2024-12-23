@@ -1,7 +1,7 @@
 from enum import Enum, auto
 from dataclasses import dataclass
 
-from world.modules import LifeSupportModule, ReactorModule
+from world.modules import LifeSupportModule, ReactorModule, EngineModule
 from world.objects import Bed, StorageContainer
 from world.tile import Tile
 
@@ -46,8 +46,21 @@ class BuildableItem:
             ]
             return len(adjacent_coords) > 0
         
+        # Special handling for Engine - must be built on walls
+        if self.name == "Engine":
+            if not (0 <= x < deck.width and 0 <= y < deck.height):
+                return False
+            tile = deck.tiles[y][x]
+            # Check if tile is a wall and doesn't have any other modules
+            return tile.wall and not tile.module and not tile.object
+        
         # For other items, check normal bounds
         if not (0 <= x < deck.width and 0 <= y < deck.height):
+            return False
+        
+        # Other modules can't be built on walls
+        tile = deck.tiles[y][x]
+        if tile.wall:
             return False
         
         return True
@@ -65,6 +78,9 @@ class BuildableItem:
             return True
         elif self.name == "Reactor":
             deck.tiles[y][x].module = ReactorModule()
+            return True
+        elif self.name == "Engine":
+            deck.tiles[y][x].module = EngineModule()
             return True
         
         # Handle wall placement with expansion
@@ -134,7 +150,8 @@ class BuildSystem:
             ]),
             BuildMode.MODULE: BuildCategory(BuildMode.MODULE, [
                 BuildableItem("Life Support", "Generates oxygen for the ship", (100, 100, 255)),
-                BuildableItem("Reactor", "Generates power for the ship", (255, 140, 0))
+                BuildableItem("Reactor", "Generates power for the ship", (255, 140, 0)),
+                BuildableItem("Engine", "Provides thrust for ship movement", (50, 255, 50))
             ])
         }
         self.active_category: BuildCategory | None = None
