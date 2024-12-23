@@ -9,11 +9,11 @@ class BuildUI:
         self.button_size = 40
         self.margin = 10
         self.panel_width = 200
-        self.panel_height = 250
+        self.panel_height = 300
         
         # Position panel in top-right corner
         self.x = screen_width - self.panel_width - 20
-        self.y = 20  # Add some top margin
+        self.y = 20
         
         # Create buttons with proper spacing
         self.buttons = {}
@@ -31,22 +31,25 @@ class BuildUI:
                     )
                     y_pos += self.button_size + self.margin
 
-        self.highlight_color = (100, 200, 255, 128)  # Light blue with alpha
+        # Adjust menu rectangles for better spacing
+        self.object_menu_rect = pygame.Rect(
+            self.x + self.button_size + self.margin * 2,  # Position right of buttons
+            self.y,  # Align with top of panel
+            self.panel_width - (self.button_size + self.margin * 3),  # Fill remaining width
+            self.panel_height
+        )
+        
+        self.module_menu_rect = pygame.Rect(
+            self.x + self.button_size + self.margin * 2,  # Position right of buttons
+            self.y,  # Align with top of panel
+            self.panel_width - (self.button_size + self.margin * 3),  # Fill remaining width
+            self.panel_height
+        )
+        
+        self.highlight_color = (100, 200, 255, 128)
         self.selected_item = None
         self.show_object_menu = False
-        self.object_menu_rect = pygame.Rect(
-            self.x, 
-            self.y + self.panel_height + 10, 
-            self.panel_width, 
-            100
-        )
         self.show_module_menu = False
-        self.module_menu_rect = pygame.Rect(
-            self.x, 
-            self.y + self.panel_height + 10, 
-            self.panel_width, 
-            100
-        )
 
     def handle_click(self, pos: tuple[int, int]) -> bool:
         # Handle main button clicks

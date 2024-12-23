@@ -40,3 +40,22 @@ class EngineModule(BaseModule):
     def thrust_output(self):
         # Only produce thrust if powered
         return self.thrust_power if self.active and self.is_powered() else 0
+
+class DockingDoorModule(BaseModule):
+    def __init__(self, name="Docking Door"):
+        super().__init__(name)
+        self.power_required = 2  # Requires 2 power to operate
+        self.active = True
+        self.is_open = False
+        self.direction = None  # 'horizontal' or 'vertical'
+        self.primary_position = None  # (x, y) of primary tile
+        self.secondary_position = None  # (x, y) of secondary tile
+
+    def update(self, dt):
+        # Update door state based on power
+        if not self.is_powered():
+            self.is_open = False
+
+    @property
+    def can_open(self):
+        return self.active and self.is_powered()

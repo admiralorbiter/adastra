@@ -1,7 +1,12 @@
 from enum import Enum, auto
 from dataclasses import dataclass
 
-from world.modules import LifeSupportModule, ReactorModule, EngineModule
+from world.modules import (
+    LifeSupportModule, 
+    ReactorModule, 
+    EngineModule,
+    DockingDoorModule
+)
 from world.objects import Bed, StorageContainer, Tank
 from world.tile import Tile
 
@@ -26,54 +31,34 @@ class BuildableItem:
             return False
         deck = ship.decks[0]
         
-        # For floor and wall, allow building within bounds or one tile beyond
-        if self.name in ["Basic Floor", "Basic Wall"]:
-            # Allow building one tile beyond in any direction
-            if not (-1 <= x <= deck.width and -1 <= y <= deck.height):
-                return False
-            
-            # If within bounds, check if tile is empty or (for floor) is a wall
-            if 0 <= x < deck.width and 0 <= y < deck.height:
-                tile = deck.tiles[y][x]
-                if self.name == "Basic Floor":
-                    # Can place floor on wall tiles
-                    if tile.module or tile.object:
-                        return False
-                else:  # Basic Wall
-                    if tile.wall or tile.module or tile.object:
-                        return False
-                
-            # Must be adjacent to existing tile
-            adjacent_coords = [
-                (ax, ay) for ax, ay in [
-                    (x+1, y), (x-1, y), (x, y+1), (x, y-1)
-                ] if 0 <= ax < deck.width and 0 <= ay < deck.height
-            ]
-            
-            # For floor, must be adjacent to existing floor or wall
-            if self.name == "Basic Floor":
-                return any(not deck.tiles[ay][ax].wall for ax, ay in adjacent_coords)
-            # For wall, just needs to be adjacent to any tile
-            return len(adjacent_coords) > 0
-        
-        # Special handling for Engine - must be built on walls
-        if self.name == "Engine":
-            if not (0 <= x < deck.width and 0 <= y < deck.height):
-                return False
-            tile = deck.tiles[y][x]
-            # Check if tile is a wall and doesn't have any other modules
-            return tile.wall and not tile.module and not tile.object
-        
-        # For other items, check normal bounds
         if not (0 <= x < deck.width and 0 <= y < deck.height):
             return False
         
-        # Other modules can't be built on walls
         tile = deck.tiles[y][x]
-        if tile.wall:
-            return False
         
-        return True
+        # Special handling for Engine and DockingDoor - must be built on walls
+        if self.name in ["Engine", "Docking Door"]:
+            if not tile.wall or tile.module or tile.object:
+                return False
+            
+            # Additional check for DockingDoor - needs two adjacent walls
+            if self.name == "Docking Door":
+                # Check horizontal placement
+                if x + 1 < deck.width:
+                    next_tile = deck.tiles[y][x + 1]
+                    if next_tile.wall and not next_tile.module:
+                        return True
+                # Check vertical placement
+                if y + 1 < deck.height:
+                    next_tile = deck.tiles[y + 1][x]
+                    if next_tile.wall and not next_tile.module:
+                        return True
+                return False
+            
+            return True
+        
+        # Other modules can't be built on walls
+        return not tile.wall and not tile.module and not tile.object
 
     def build(self, ship, x: int, y: int) -> bool:
         """Actually perform the building action"""
@@ -96,6 +81,25 @@ class BuildableItem:
         elif self.name == "Engine":
             deck.tiles[grid_y][grid_x].module = EngineModule()
             return True
+        elif self.name == "Docking Door":
+            module = DockingDoorModule()
+            module.primary_position = (grid_x, grid_y)
+            
+            # Check horizontal placement
+            if grid_x + 1 < deck.width and deck.tiles[grid_y][grid_x + 1].wall:
+                module.direction = 'horizontal'
+                module.secondary_position = (grid_x + 1, grid_y)
+                deck.tiles[grid_y][grid_x].module = module
+                deck.tiles[grid_y][grid_x + 1].module = module
+                return True
+            # Check vertical placement    
+            elif grid_y + 1 < deck.height and deck.tiles[grid_y + 1][grid_x].wall:
+                module.direction = 'vertical'
+                module.secondary_position = (grid_x, grid_y + 1)
+                deck.tiles[grid_y][grid_x].module = module
+                deck.tiles[grid_y + 1][grid_x].module = module
+                return True
+            return False
         
         # Handle wall placement with expansion
         if self.name == "Basic Wall":
@@ -196,7 +200,8 @@ class BuildSystem:
             BuildMode.MODULE: BuildCategory(BuildMode.MODULE, [
                 BuildableItem("Life Support", "Generates oxygen for the ship", (100, 100, 255)),
                 BuildableItem("Reactor", "Generates power for the ship", (255, 140, 0)),
-                BuildableItem("Engine", "Provides thrust for ship movement", (50, 255, 50))
+                BuildableItem("Engine", "Provides thrust for ship movement", (50, 255, 50)),
+                BuildableItem("Docking Door", "Allows ships to dock when powered", (150, 150, 150))
             ])
         }
         self.active_category: BuildCategory | None = None

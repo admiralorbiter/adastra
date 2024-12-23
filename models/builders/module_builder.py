@@ -1,5 +1,10 @@
 from .base_builder import BaseBuilder
-from world.modules import LifeSupportModule, ReactorModule, EngineModule
+from world.modules import (
+    LifeSupportModule, 
+    ReactorModule, 
+    EngineModule,
+    DockingDoorModule
+)
 
 class ModuleBuilder(BaseBuilder):
     def __init__(self, name: str, description: str, icon_color: tuple[int, int, int], module_type, cost: int = 10):
@@ -16,6 +21,23 @@ class ModuleBuilder(BaseBuilder):
             
         tile = deck.tiles[y][x]
         
+        # Special handling for DockingDoor
+        if self.name == "Docking Door":
+            # Try horizontal placement
+            if x + 1 < deck.width:
+                next_tile = deck.tiles[y][x + 1]
+                if (tile.wall and next_tile.wall and 
+                    not tile.module and not next_tile.module):
+                    return True
+                
+            # Try vertical placement
+            if y + 1 < deck.height:
+                next_tile = deck.tiles[y + 1][x]
+                if (tile.wall and next_tile.wall and 
+                    not tile.module and not next_tile.module):
+                    return True
+            return False
+
         # Engine must be built on walls
         if self.name == "Engine":
             return tile.wall and not tile.module and not tile.object
@@ -28,5 +50,24 @@ class ModuleBuilder(BaseBuilder):
             return False
             
         deck = ship.decks[0]
+        
+        # Special handling for DockingDoor
+        if self.name == "Docking Door":
+            module = self.module_type()
+            module.primary_position = (x, y)
+            
+            # Determine placement direction
+            if x + 1 < deck.width and deck.tiles[y][x + 1].wall:
+                module.direction = 'horizontal'
+                module.secondary_position = (x + 1, y)
+                deck.tiles[y][x + 1].module = module
+            else:
+                module.direction = 'vertical'
+                module.secondary_position = (x, y + 1)
+                deck.tiles[y + 1][x].module = module
+            
+            deck.tiles[y][x].module = module
+            return True
+        
         deck.tiles[y][x].module = self.module_type()
         return True 

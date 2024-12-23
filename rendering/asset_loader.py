@@ -22,6 +22,8 @@ class AssetLoader:
         # Load module images
         self._images['life_support'] = self.load_and_scale_image('images/o2.png')
         self._images['reactor'] = self.load_and_scale_image('images/reactor.png')
+        self._images['engine'] = self.load_and_scale_image('images/engine.png')
+        self._images['docking_door'] = self.load_and_scale_image('images/docking_door.png')
         # Add new object images - don't scale them initially
         self._images['bed'] = self.load_and_scale_image('images/bed.png', scale=False)
         self._images['container'] = self.load_and_scale_image('images/container.png', scale=False)

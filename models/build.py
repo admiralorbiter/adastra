@@ -5,7 +5,7 @@ from models.builders.wall_builder import WallBuilder
 from models.builders.module_builder import ModuleBuilder
 from models.builders.cable_builder import CableBuilder
 from models.builders.object_builder import ObjectBuilder
-from world.modules import LifeSupportModule, ReactorModule, EngineModule
+from world.modules import LifeSupportModule, ReactorModule, EngineModule, DockingDoorModule
 from world.objects import Bed, StorageContainer, Tank
 
 class BuildMode(Enum):
@@ -43,7 +43,8 @@ class BuildSystem:
             BuildMode.MODULE: BuildCategory(BuildMode.MODULE, [
                 ModuleBuilder("Life Support", "Generates oxygen for the ship", (100, 100, 255), LifeSupportModule),
                 ModuleBuilder("Reactor", "Generates power for the ship", (255, 140, 0), ReactorModule),
-                ModuleBuilder("Engine", "Provides thrust for ship movement", (50, 255, 50), EngineModule)
+                ModuleBuilder("Engine", "Provides thrust for ship movement", (50, 255, 50), EngineModule),
+                ModuleBuilder("Docking Door", "Allows ships to dock when powered", (150, 150, 150), DockingDoorModule)
             ])
         }
         self.active_category: BuildCategory | None = None

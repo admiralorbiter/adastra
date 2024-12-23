@@ -1,6 +1,6 @@
 import pygame
 from .base_renderer import BaseRenderer
-from world.modules import LifeSupportModule, ReactorModule
+from world.modules import LifeSupportModule, ReactorModule, EngineModule, DockingDoorModule
 
 class ModuleRenderer(BaseRenderer):
     def draw_modules(self, screen, deck, camera):
@@ -24,12 +24,22 @@ class ModuleRenderer(BaseRenderer):
             image_key = 'life_support'
         elif isinstance(module, ReactorModule):
             image_key = 'reactor'
-            
+        elif isinstance(module, EngineModule):
+            image_key = 'engine'
+        elif isinstance(module, DockingDoorModule):
+            # Only draw at primary position
+            if (x // size, y // size) == module.primary_position:
+                image_key = 'docking_door'
+                if module.direction == 'horizontal':
+                    size = (size * 2, size)  # Double width
+                else:
+                    size = (size, size * 2)  # Double height
+        
         if image_key:
             image = self.asset_loader.get_image(image_key)
             if image:
-                scaled_image = pygame.transform.scale(image, (size, size))
-                if isinstance(module, LifeSupportModule) and not module.is_powered():
+                scaled_image = pygame.transform.scale(image, size if isinstance(size, tuple) else (size, size))
+                if not module.is_powered():
                     tinted = scaled_image.copy()
                     tinted.fill((255, 0, 0, 128), special_flags=pygame.BLEND_RGBA_MULT)
                     screen.blit(tinted, (x, y))
