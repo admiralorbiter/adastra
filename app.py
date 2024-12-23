@@ -1,5 +1,5 @@
 import pygame
-from game.game_state import GameState
+from game.states.game_state import GameState
 from game.event_handlers.event_handler import EventHandler
 from rendering.ship_renderer import ShipRenderer
 from rendering.cable_renderer import CableRenderer
@@ -27,19 +27,15 @@ def main():
         # Handle events first
         event_handler.handle_events()
         
-        # Update time manager and get scaled dt
+        # Update time manager
         game_state.time_manager.update(raw_dt)
+        
+        # Get scaled dt based on current state
         dt = game_state.time_manager.get_scaled_dt(raw_dt)
         
-        # Only update game logic if not paused
-        if dt > 0:
-            # Update ship (which will update all systems including crew)
-            game_state.ship.update(dt)
-
-        # Get current build item to check if cable tool is selected
-        current_item = game_state.build_ui.build_system.get_current_item()
-        show_cables = current_item and current_item.name == "Power Cable"
-
+        # Update game state
+        game_state.update(dt)
+        
         # Rendering
         game_state.screen.fill((0, 0, 0))
         
@@ -48,14 +44,14 @@ def main():
             game_state.screen, 
             game_state.ship, 
             game_state.camera, 
-            None if show_cables else game_state.selected_crew,
+            None if game_state.show_cables else game_state.selected_crew,
             game_state.build_ui,
             event_handler.rect_select_start,
             event_handler.rect_select_end
         )
         
         # Draw cables if tool is selected
-        if show_cables:
+        if game_state.show_cables:
             cable_renderer.draw_cables(
                 game_state.screen, 
                 game_state.ship, 

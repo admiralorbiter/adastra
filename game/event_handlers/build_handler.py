@@ -1,5 +1,6 @@
 import pygame
 from .base_handler import BaseEventHandler
+from game.states.game_states import GameState as GameStateEnum
 
 class BuildEventHandler(BaseEventHandler):
     def __init__(self, game_state):
@@ -32,16 +33,16 @@ class BuildEventHandler(BaseEventHandler):
         
         if current_item:
             if current_item.name == "Power Cable":
-                self.game_state.cable_view_active = True
+                self.game_state.state_manager.change_state(GameStateEnum.BUILDING)
                 self.game_state.cable_system.start_drag(grid_x, grid_y)
             elif 0 <= grid_x <= self.game_state.ship.decks[0].width and 0 <= grid_y <= self.game_state.ship.decks[0].height:
                 current_item.build(self.game_state.ship, grid_x, grid_y)
 
     def handle_left_release(self, event):
         """Handle mouse left button release"""
-        if self.game_state.cable_view_active:
+        if self.game_state.show_cables:
             self.game_state.cable_system.end_drag()
-            self.game_state.cable_view_active = False
+            self.game_state.state_manager.change_state(GameStateEnum.PLAYING)
         elif self.rect_select_start and self.rect_select_end:
             self.place_floor_rectangle()
 
@@ -54,10 +55,13 @@ class BuildEventHandler(BaseEventHandler):
             self.game_state.build_ui.clear_selection()
 
     def handle_mouse_motion(self, event):
-        if self.game_state.cable_view_active:
+        if self.dragging:
             mouse_x, mouse_y = pygame.mouse.get_pos()
             grid_x, grid_y = self.game_state.camera.screen_to_grid(mouse_x, mouse_y)
-            self.game_state.cable_system.update_drag(grid_x, grid_y)
+            
+            # Handle cable dragging
+            if self.game_state.show_cables:
+                self.game_state.cable_system.update_drag(grid_x, grid_y)
         elif self.rect_select_start:
             mouse_pos = pygame.mouse.get_pos()
             self.rect_select_end = self.game_state.camera.screen_to_grid(*mouse_pos)
