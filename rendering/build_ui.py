@@ -240,6 +240,16 @@ class BuildUI:
                 text = font.render(item.name, True, (200, 200, 200))
                 screen.blit(text, (icon_rect.right + 10, item_rect.centery - text.get_height()//2))
 
+    def clear_selection(self):
+        """Clear all selections and menus"""
+        self.build_system.clear_selection()
+        self.show_object_menu = False
+        self.show_module_menu = False
+        self.selected_item = None
+        # Deactivate all buttons
+        for button in self.buttons.values():
+            button.active = False
+
 class UIButton:
     def __init__(self, rect: pygame.Rect, text: str, icon_color: tuple[int, int, int], tooltip: str = ""):
         self.rect = rect

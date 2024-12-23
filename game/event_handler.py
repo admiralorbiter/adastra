@@ -36,11 +36,14 @@ class EventHandler:
                     self.dragging = True
                     self.handle_mouse_down(event)
                 elif event.button == 3:  # Right click
+                    # Then handle rectangle selection if needed
                     current_item = self.game_state.build_ui.build_system.get_current_item()
                     if current_item and current_item.name == "Basic Floor":
                         mouse_pos = pygame.mouse.get_pos()
                         self.rect_select_start = self.game_state.camera.screen_to_grid(*mouse_pos)
-                        
+                    else:
+                        # Clear build selection first
+                        self.game_state.build_ui.clear_selection()
             elif event.type == pygame.MOUSEBUTTONUP:
                 self.handle_mouse_up(event)
                 if event.button == 1:  # Left click

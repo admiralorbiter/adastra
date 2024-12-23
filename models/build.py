@@ -215,3 +215,11 @@ class BuildSystem:
         if self.active_category:
             return self.active_category.selected_item
         return None 
+
+    def clear_selection(self):
+        """Clear the current build mode and selection"""
+        self.current_mode = BuildMode.NONE
+        self.active_category = None
+        # Deactivate all category selections
+        for category in self.categories.values():
+            category.selected_item = None 
