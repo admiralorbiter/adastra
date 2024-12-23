@@ -8,7 +8,7 @@ from utils.constants import GameConstants
 
 class ShipRenderer:
     @staticmethod
-    def draw_ship(screen, ship, camera, selected_crew=None, build_ui=None):
+    def draw_ship(screen, ship, camera, selected_crew=None, build_ui=None, rect_select_start=None, rect_select_end=None):
         if not ship.decks:
             return
 
@@ -219,3 +219,20 @@ class ShipRenderer:
                 # Draw selection highlight
                 pygame.draw.rect(screen, (255, 255, 0),
                                (screen_x, screen_y, tile_size, tile_size), 2)
+
+        # Draw rectangle selection preview if active
+        if rect_select_start and rect_select_end:
+            start_x, start_y = rect_select_start
+            end_x, end_y = rect_select_end
+            min_x, max_x = min(start_x, end_x), max(start_x, end_x)
+            min_y, max_y = min(start_y, end_y), max(start_y, end_y)
+            
+            for y in range(min_y, max_y + 1):
+                for x in range(min_x, max_x + 1):
+                    screen_x, screen_y = camera.grid_to_screen(x, y)
+                    tile_size = int(GameConstants.get_instance().TILE_SIZE * camera.zoom)
+                    
+                    # Draw semi-transparent preview
+                    preview = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)
+                    preview.fill((0, 255, 0, 64))  # Very transparent green
+                    screen.blit(preview, (screen_x, screen_y))

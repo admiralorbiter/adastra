@@ -7,7 +7,10 @@ from utils.constants import GameConstants
 class EventHandler:
     def __init__(self, game_state):
         self.game_state = game_state
-
+        self.dragging = False
+        self.rect_select_start = None
+        self.rect_select_end = None
+        
     def handle_events(self):
         # Handle keyboard state for continuous movement
         keys = pygame.key.get_pressed()
@@ -29,12 +32,55 @@ class EventHandler:
                 if event.button in (4, 5):  # Mouse wheel up (4) or down (5)
                     mouse_x, mouse_y = pygame.mouse.get_pos()
                     self.game_state.camera.adjust_zoom(event.button == 4, mouse_x, mouse_y)
-                else:
+                if event.button == 1:  # Left click
+                    self.dragging = True
                     self.handle_mouse_down(event)
+                elif event.button == 3:  # Right click
+                    current_item = self.game_state.build_ui.build_system.get_current_item()
+                    if current_item and current_item.name == "Basic Floor":
+                        mouse_pos = pygame.mouse.get_pos()
+                        self.rect_select_start = self.game_state.camera.screen_to_grid(*mouse_pos)
+                        
             elif event.type == pygame.MOUSEBUTTONUP:
                 self.handle_mouse_up(event)
+                if event.button == 1:  # Left click
+                    self.dragging = False
+                    if self.rect_select_start and self.rect_select_end:
+                        self.place_floor_rectangle()
+                elif event.button == 3:  # Right click
+                    self.rect_select_start = None
+                    self.rect_select_end = None
+                    
             elif event.type == pygame.MOUSEMOTION:
                 self.handle_mouse_motion(event)
+                if self.dragging:
+                    self.handle_drag(event)
+                if self.rect_select_start:
+                    mouse_pos = pygame.mouse.get_pos()
+                    self.rect_select_end = self.game_state.camera.screen_to_grid(*mouse_pos)
+
+    def handle_drag(self, event):
+        current_item = self.game_state.build_ui.build_system.get_current_item()
+        if current_item and current_item.name == "Basic Floor":
+            grid_x, grid_y = self.game_state.camera.screen_to_grid(*event.pos)
+            current_item.build(self.game_state.ship, grid_x, grid_y)
+
+    def place_floor_rectangle(self):
+        if not self.rect_select_start or not self.rect_select_end:
+            return
+            
+        start_x, start_y = self.rect_select_start
+        end_x, end_y = self.rect_select_end
+        
+        # Ensure start is top-left and end is bottom-right
+        min_x, max_x = min(start_x, end_x), max(start_x, end_x)
+        min_y, max_y = min(start_y, end_y), max(start_y, end_y)
+        
+        current_item = self.game_state.build_ui.build_system.get_current_item()
+        if current_item and current_item.name == "Basic Floor":
+            for y in range(min_y, max_y + 1):
+                for x in range(min_x, max_x + 1):
+                    current_item.build(self.game_state.ship, x, y)
 
     def handle_keydown(self, event):
         if event.key == pygame.K_SPACE:

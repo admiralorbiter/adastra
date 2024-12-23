@@ -23,7 +23,7 @@ def main():
 
     while game_state.running:
         raw_dt = game_state.clock.tick(30) / 1000.0
-        
+         
         # Handle events first
         event_handler.handle_events()
         
@@ -53,7 +53,9 @@ def main():
             game_state.ship, 
             game_state.camera, 
             None if show_cables else game_state.selected_crew,
-            game_state.build_ui
+            game_state.build_ui,
+            event_handler.rect_select_start,
+            event_handler.rect_select_end
         )
         
         # Draw cables if tool is selected
