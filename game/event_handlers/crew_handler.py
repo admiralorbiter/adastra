@@ -7,6 +7,9 @@ class CrewEventHandler(BaseEventHandler):
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             self.handle_crew_click(event)
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+            # Right click to deselect
+            self.game_state.selected_crew = None
 
     def handle_crew_click(self, event):
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -23,9 +26,11 @@ class CrewEventHandler(BaseEventHandler):
             deck = self.game_state.ship.decks[0]
             if grid_x < deck.width and grid_y < deck.height:
                 tile = deck.tiles[grid_y][grid_x]
-                self.handle_crew_destination(tile, grid_x, grid_y)
+                if self.handle_crew_destination(tile, grid_x, grid_y):
+                    # Deselect crew after giving them a valid movement command
+                    self.game_state.selected_crew = None
 
-    def handle_crew_destination(self, tile, grid_x, grid_y):
+    def handle_crew_destination(self, tile, grid_x, grid_y) -> bool:
         crew = self.game_state.selected_crew
         start = (int(crew.x), int(crew.y))
         goal = (grid_x, grid_y)
@@ -35,8 +40,11 @@ class CrewEventHandler(BaseEventHandler):
             if path:
                 crew.target_object = tile.object
                 crew.set_path(path)
+                return True
         elif tile.is_walkable():
             path = find_path(self.game_state.ship.decks[0], start, goal)
             if path:
                 crew.target_object = None
-                crew.set_path(path) 
+                crew.set_path(path)
+                return True
+        return False 

@@ -33,11 +33,7 @@ def main():
         
         # Only update game logic if not paused
         if dt > 0:
-            # Update crew members
-            for crew_member in game_state.ship.crew:
-                crew_member.update(dt)
-            
-            # Update ship
+            # Update ship (which will update all systems including crew)
             game_state.ship.update(dt)
 
         # Get current build item to check if cable tool is selected
