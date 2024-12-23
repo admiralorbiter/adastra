@@ -1,0 +1,9 @@
+# General game settings
+window:
+  width: 1280
+  height: 720
+  fps: 30
+  title: "Ad Astra"
+
+tile:
+  size: 32 

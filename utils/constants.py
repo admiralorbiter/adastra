@@ -1,3 +1,5 @@
+from utils.config_manager import ConfigManager
+
 class GameConstants:
     _instance = None
     
@@ -5,7 +7,7 @@ class GameConstants:
         if GameConstants._instance is not None:
             raise Exception("GameConstants is a singleton!")
         GameConstants._instance = self
-        self._tile_size = 32  # Default tile size
+        self._config = ConfigManager.get_instance()
         
     @staticmethod
     def get_instance():
@@ -15,8 +17,4 @@ class GameConstants:
         
     @property
     def TILE_SIZE(self):
-        return self._tile_size
-        
-    @TILE_SIZE.setter
-    def TILE_SIZE(self, value):
-        self._tile_size = value
+        return self._config.get('game.tile.size', 32)

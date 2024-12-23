@@ -1,0 +1,10 @@
+# Resource related configurations
+oxygen:
+  base_capacity_per_tile: 10
+  consumption_per_crew: 1
+  production_rate: 1
+
+power:
+  reactor_output: 10
+  life_support_required: 2
+  engine_required: 3 

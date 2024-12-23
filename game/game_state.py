@@ -1,6 +1,13 @@
 import pygame
 
+from game.ship_builder import create_basic_ship
+from game.time_manager import TimeManager
+from rendering.build_ui import BuildUI
+from rendering.cable_renderer import CableRenderer
 from utils.constants import GameConstants
+from utils.config_manager import ConfigManager
+from world.cables import CableSystem
+from world.camera import Camera
 
 class GameState:
     def __init__(self):
@@ -16,16 +23,15 @@ class GameState:
         self.cable_view_active = False
         self.time_manager = None
 
-    def initialize(self, screen_width, screen_height):
-        from world.camera import Camera
-        from game.ship_builder import create_basic_ship
-        from world.cables import CableSystem
-        from rendering.cable_renderer import CableRenderer
-        from rendering.build_ui import BuildUI
-        from world.ship import Ship
-        from game.time_manager import TimeManager
-
+    def initialize(self, screen_width=None, screen_height=None):
+        config = ConfigManager.get_instance()
+        
+        # Use provided dimensions or fall back to config
+        screen_width = screen_width or config.get('game.window.width')
+        screen_height = screen_height or config.get('game.window.height')
+        
         self.screen = pygame.display.set_mode((screen_width, screen_height))
+        pygame.display.set_caption(config.get('game.window.title', 'Ad Astra'))
         self.clock = pygame.time.Clock()
         self.cable_system = CableSystem()
         self.ship = create_basic_ship(self.cable_system)

@@ -1,0 +1,14 @@
+# Crew member configurations
+needs:
+  hunger:
+    initial: 51
+    decay_rate: 0.1
+    threshold: 50
+  sleep:
+    initial: 100
+    decay_rate: 0.01
+  oxygen:
+    initial: 100
+
+movement:
+  base_speed: 2.0 

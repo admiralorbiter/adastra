@@ -13,7 +13,7 @@ def main():
     game_state.initialize(1280, 720)
     
     # Initialize asset loader
-    AssetLoader.get_instance()
+    AssetLoader.get_instance() 
     
     event_handler = EventHandler(game_state)
     ship_renderer = ShipRenderer()

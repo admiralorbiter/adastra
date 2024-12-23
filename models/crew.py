@@ -4,6 +4,7 @@ from world.objects import Bed
 from world.items import ItemType
 from world.objects import StorageContainer
 from world.pathfinding import find_path
+from utils.config_manager import ConfigManager
 
 class Skill(Enum):
     ENGINEER = "Engineer"
@@ -12,6 +13,8 @@ class Skill(Enum):
 
 class CrewMember:
     def __init__(self, name: str, skill: Skill):
+        config = ConfigManager.get_instance()
+        
         self.name = name
         self.skill = skill
         self.ship = None  # Add ship reference
@@ -20,17 +23,17 @@ class CrewMember:
         self.x = 0
         self.y = 0
         
-        # Basic needs (0-100 scale)
-        self.hunger = 51  # Changed from 100 to 51
-        self.sleep = 100   # 100 = well-rested, 0 = exhausted
-        self.oxygen = 100  # 100 = normal, 0 = critical
+        # Basic needs from configuration
+        self.hunger = config.get('crew.needs.hunger.initial', 51)
+        self.sleep = config.get('crew.needs.sleep.initial', 100)
+        self.oxygen = config.get('crew.needs.oxygen.initial', 100)
         
         self.mood = 100    # 100 = happy, 0 = very upset
         self.work_efficiency = 1.0  # Multiplier for work speed
         
         # Add movement properties
         self.move_path = []
-        self.move_speed = 2.0  # Tiles per second
+        self.move_speed = config.get('crew.movement.base_speed', 2.0)
         self.target_x = None
         self.target_y = None
         
