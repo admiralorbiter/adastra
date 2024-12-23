@@ -58,6 +58,9 @@ class BuildUI:
                 self.build_system.set_mode(mode)
                 button.active = (self.build_system.current_mode == mode)
                 
+                # Toggle cable visibility when cable mode is selected
+                self.game_state.show_cables = (mode == BuildMode.CABLE and button.active)
+                
                 # Show appropriate menu based on mode
                 if mode == BuildMode.OBJECT:
                     self.show_object_menu = button.active

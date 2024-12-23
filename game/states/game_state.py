@@ -24,6 +24,7 @@ class GameState:
         self.cable_system = None
         self.cable_renderer = None
         self.time_manager = None
+        self._show_cables = False
         
         # Add state manager
         self.state_manager = StateManager()
@@ -89,6 +90,10 @@ class GameState:
     @property
     def show_cables(self):
         """Property to determine if cables should be shown"""
-        return (self.state_manager.current_state == GameStateEnum.BUILDING and 
-                self.build_ui and 
-                self.build_ui.build_system.current_mode == BuildMode.CABLE) 
+        return (self.build_ui and 
+                self.build_ui.build_system.current_mode == BuildMode.CABLE)
+
+    @show_cables.setter
+    def show_cables(self, value):
+        """Setter for show_cables property"""
+        self._show_cables = value 
