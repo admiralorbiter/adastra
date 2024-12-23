@@ -93,17 +93,59 @@ class ShipRenderer:
                     
                     if isinstance(tile.module, ReactorModule):
                         text = f"+{tile.module.power_output}"
-                        text_color = (0, 255, 0)
+                        text_color = (100, 255, 100)  # Lighter green
                     else:
                         if tile.module.is_powered():
                             text = f"{tile.module.power_available}/{tile.module.power_required}"
-                            text_color = (0, 255, 0)
+                            text_color = (100, 255, 100)  # Lighter green
                         else:
                             text = f"0/{tile.module.power_required}"
                             text_color = (255, 50, 50)
                     
-                    text_surface = font.render(text, True, text_color)
+                    # Create text surface with outline
+                    def create_outlined_text(text, font, text_color, outline_color=(0, 0, 0)):
+                        # Create the outline by rendering the text multiple times with offsets
+                        outline_surfaces = []
+                        outline_positions = [(-1,-1), (-1,1), (1,-1), (1,1)]  # Diagonal positions
+                        
+                        # Create outline pieces
+                        for dx, dy in outline_positions:
+                            outline_surface = font.render(text, True, outline_color)
+                            outline_surfaces.append((outline_surface, (dx, dy)))
+                        
+                        # Create main text
+                        text_surface = font.render(text, True, text_color)
+                        
+                        # Calculate the size needed for the combined surface
+                        width = text_surface.get_width() + 2  # Add 2 for outline
+                        height = text_surface.get_height() + 2  # Add 2 for outline
+                        
+                        # Create final surface with alpha channel
+                        final_surface = pygame.Surface((width, height), pygame.SRCALPHA)
+                        
+                        # Blit outline pieces
+                        for surface, (dx, dy) in outline_surfaces:
+                            final_surface.blit(surface, (dx + 1, dy + 1))  # +1 to center
+                        
+                        # Blit main text in center
+                        final_surface.blit(text_surface, (1, 1))  # Center the main text
+                        
+                        return final_surface
+                    
+                    # Create the outlined text surface
+                    text_surface = create_outlined_text(text, font, text_color)
                     text_rect = text_surface.get_rect(center=(screen_x + tile_size//2, screen_y + tile_size//2))
+                    
+                    # Create slightly larger background rect
+                    padding = 2
+                    bg_rect = text_rect.inflate(padding * 2, padding * 2)
+                    
+                    # Draw semi-transparent white background
+                    bg_surface = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
+                    bg_surface.fill((255, 255, 255, 160))  # White with 60% opacity (slightly more transparent)
+                    screen.blit(bg_surface, bg_rect)
+                    
+                    # Draw the outlined text
                     screen.blit(text_surface, text_rect)
 
                 # Highlight valid build locations when in build mode
