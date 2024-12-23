@@ -1,6 +1,6 @@
 import pygame
 from game.game_state import GameState
-from game.event_handler import EventHandler
+from game.event_handlers.event_handler import EventHandler
 from rendering.ship_renderer import ShipRenderer
 from rendering.cable_renderer import CableRenderer
 from rendering.asset_loader import AssetLoader
