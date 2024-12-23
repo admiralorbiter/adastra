@@ -1,5 +1,6 @@
 import pygame
 from models.build import BuildMode, BuildSystem
+from utils.constants import GameConstants
 
 class BuildUI:
     def __init__(self, screen_width: int, game_state):
@@ -133,19 +134,16 @@ class BuildUI:
 
         # Draw cable mode highlights if active
         if self.build_system.current_mode == BuildMode.CABLE:
-            # Get mouse position and convert to grid coordinates
             mouse_x, mouse_y = pygame.mouse.get_pos()
-            world_x, world_y = self.game_state.camera.screen_to_world(mouse_x, mouse_y)
-            grid_x = int(world_x / 32)
-            grid_y = int(world_y / 32)
+            grid_x, grid_y = self.game_state.camera.screen_to_grid(mouse_x, mouse_y)
 
             # Only highlight if mouse is over valid grid position
             if (0 <= grid_x < self.game_state.ship.decks[0].width and 
                 0 <= grid_y < self.game_state.ship.decks[0].height):
                 
                 # Convert grid position back to screen coordinates
-                screen_x, screen_y = self.game_state.camera.world_to_screen(grid_x * 32, grid_y * 32)
-                tile_size = int(32 * self.game_state.camera.zoom)
+                screen_x, screen_y = self.game_state.camera.grid_to_screen(grid_x, grid_y)
+                tile_size = int(GameConstants.get_instance().TILE_SIZE * self.game_state.camera.zoom)
                 
                 # Create highlight surface with proper scaling
                 highlight = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)

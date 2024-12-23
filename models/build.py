@@ -67,65 +67,69 @@ class BuildableItem:
 
     def build(self, ship, x: int, y: int) -> bool:
         """Actually perform the building action"""
-        if not self.can_build(ship, x, y):
+        # Convert screen coordinates to grid coordinates
+        grid_x = int(x)  # Already converted in UI
+        grid_y = int(y)  # Already converted in UI
+        
+        if not self.can_build(ship, grid_x, grid_y):
             return False
             
         deck = ship.decks[0]
         
         # Handle module placement
         if self.name == "Life Support":
-            deck.tiles[y][x].module = LifeSupportModule()
+            deck.tiles[grid_y][grid_x].module = LifeSupportModule()
             return True
         elif self.name == "Reactor":
-            deck.tiles[y][x].module = ReactorModule()
+            deck.tiles[grid_y][grid_x].module = ReactorModule()
             return True
         elif self.name == "Engine":
-            deck.tiles[y][x].module = EngineModule()
+            deck.tiles[grid_y][grid_x].module = EngineModule()
             return True
         
         # Handle wall placement with expansion
         if self.name == "Basic Wall":
             # Handle expansion cases
-            if x == deck.width:
-                ship.expand_deck("right", y=y)
+            if grid_x == deck.width:
+                ship.expand_deck("right", y=grid_y)
                 return True
-            elif x == -1:
-                ship.expand_deck("left", y=y)
+            elif grid_x == -1:
+                ship.expand_deck("left", y=grid_y)
                 return True
-            elif y == deck.height:
-                ship.expand_deck("down", x=x)
+            elif grid_y == deck.height:
+                ship.expand_deck("down", x=grid_x)
                 return True
-            elif y == -1:
-                ship.expand_deck("up", x=x)
+            elif grid_y == -1:
+                ship.expand_deck("up", x=grid_x)
                 return True
             
             # Place single wall within bounds
-            if 0 <= x < deck.width and 0 <= y < deck.height:
+            if 0 <= grid_x < deck.width and 0 <= grid_y < deck.height:
                 # Ensure tile exists before setting wall
-                if not deck.tiles[y][x]:
-                    deck.tiles[y][x] = Tile(x=x, y=y)
-                deck.tiles[y][x].wall = True
+                if not deck.tiles[grid_y][grid_x]:
+                    deck.tiles[grid_y][grid_x] = Tile(x=grid_x, y=grid_y)
+                deck.tiles[grid_y][grid_x].wall = True
                 return True
         
         # Handle object placement
         if self.name == "Storage Tank":
-            deck.tiles[y][x].object = Tank()
+            deck.tiles[grid_y][grid_x].object = Tank()
             return True
         elif self.name == "Storage Container":
-            deck.tiles[y][x].object = StorageContainer()
+            deck.tiles[grid_y][grid_x].object = StorageContainer()
             return True
         elif self.name == "Bed":
-            deck.tiles[y][x].object = Bed()
+            deck.tiles[grid_y][grid_x].object = Bed()
             return True
         
         # Handle other building types...
         elif self.name == "Basic Floor":
-            if not deck.tiles[y][x]:
-                deck.tiles[y][x] = Tile(x=x, y=y)
-            deck.tiles[y][x].wall = False
+            if not deck.tiles[grid_y][grid_x]:
+                deck.tiles[grid_y][grid_x] = Tile(x=grid_x, y=grid_y)
+            deck.tiles[grid_y][grid_x].wall = False
             return True
         elif self.name == "Power Cable":
-            ship.cable_system.add_cable(x, y)
+            ship.cable_system.add_cable(grid_x, grid_y)
             return True
         
         return False

@@ -1,5 +1,7 @@
 import pygame
 
+from utils.constants import GameConstants
+
 class GameState:
     def __init__(self):
         self.selected_crew = None
@@ -35,6 +37,6 @@ class GameState:
         self.time_manager = TimeManager()
         
         # Center camera on ship
-        ship_width = self.ship.decks[0].width * 32  # TILE_SIZE
-        ship_height = self.ship.decks[0].height * 32
+        ship_width = self.ship.decks[0].width * GameConstants.get_instance().TILE_SIZE
+        ship_height = self.ship.decks[0].height * GameConstants.get_instance().TILE_SIZE
         self.camera.center_on(ship_width, ship_height) 

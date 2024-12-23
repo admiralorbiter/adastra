@@ -28,8 +28,10 @@ class CableSystem:
     
     def add_cable(self, x: int, y: int):
         """Add a cable at the specified coordinates"""
-        if self.can_place_cable(x, y) and (x, y) not in self.cables:
-            self.cables[(x, y)] = Cable()
+        grid_x = int(x)
+        grid_y = int(y)
+        if self.can_place_cable(grid_x, grid_y) and (grid_x, grid_y) not in self.cables:
+            self.cables[(grid_x, grid_y)] = Cable()
             self._update_networks()
     
     def remove_cable(self, x: int, y: int):
@@ -40,17 +42,18 @@ class CableSystem:
     
     def start_drag(self, x: int, y: int):
         """Start cable dragging operation"""
-        if self.can_place_cable(x, y):
-            self.drag_start = (int(x), int(y))
+        grid_x = int(x)
+        grid_y = int(y)
+        if self.can_place_cable(grid_x, grid_y):
+            self.drag_start = (grid_x, grid_y)
             self.preview_cables.clear()
     
     def update_drag(self, x: int, y: int):
         """Update cable preview during drag"""
         if self.drag_start:
-            # Clamp coordinates to deck bounds
-            x = max(0, min(int(x), self.ship.decks[0].width - 1))
-            y = max(0, min(int(y), self.ship.decks[0].height - 1))
-            self.drag_end = (x, y)
+            grid_x = max(0, min(int(x), self.ship.decks[0].width - 1))
+            grid_y = max(0, min(int(y), self.ship.decks[0].height - 1))
+            self.drag_end = (grid_x, grid_y)
             self._update_preview()
     
     def end_drag(self):

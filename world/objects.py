@@ -45,8 +45,13 @@ class StorageContainer(BaseObject):
 
     def is_accessible_from(self, x, y, tile_x, tile_y):
         """Check if object can be accessed from the given position"""
-        dx = abs(x - tile_x)
-        dy = abs(y - tile_y)
+        # Convert to grid coordinates if needed
+        grid_x = int(x)
+        grid_y = int(y)
+        grid_tile_x = int(tile_x)
+        grid_tile_y = int(tile_y)
+        dx = abs(grid_x - grid_tile_x)
+        dy = abs(grid_y - grid_tile_y)
         return dx + dy == 1  # Adjacent tile
 
 class Tank(BaseObject):

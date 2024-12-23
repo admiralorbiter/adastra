@@ -2,8 +2,7 @@ import pygame
 from world import camera, ship
 from world.pathfinding import find_path
 from world.objects import Bed
-
-TILE_SIZE = 32
+from utils.constants import GameConstants
 
 class EventHandler:
     def __init__(self, game_state):
@@ -13,13 +12,13 @@ class EventHandler:
         # Handle keyboard state for continuous movement
         keys = pygame.key.get_pressed()
         if keys[pygame.K_w]:
-            self.game_state.camera.move(0, 5)   # Move up (positive y)
+            self.game_state.camera.move(0, 5)
         if keys[pygame.K_s]:
-            self.game_state.camera.move(0, -5)  # Move down (negative y)
+            self.game_state.camera.move(0, -5)
         if keys[pygame.K_a]:
-            self.game_state.camera.move(5, 0)   # Move left (positive x)
+            self.game_state.camera.move(5, 0)
         if keys[pygame.K_d]:
-            self.game_state.camera.move(-5, 0)  # Move right (negative x)
+            self.game_state.camera.move(-5, 0)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -52,9 +51,8 @@ class EventHandler:
         if self.game_state.build_ui.handle_click((mouse_x, mouse_y)):
             return
         
-        # Convert screen coordinates to world coordinates
-        world_x, world_y = self.game_state.camera.screen_to_world(mouse_x, mouse_y)
-        grid_x, grid_y = int(world_x // TILE_SIZE), int(world_y // TILE_SIZE)
+        # Convert screen coordinates to grid coordinates using camera
+        grid_x, grid_y = self.game_state.camera.screen_to_grid(mouse_x, mouse_y)
         
         if event.button == 1:  # Left mouse button
             current_item = self.game_state.build_ui.build_system.get_current_item()
@@ -100,16 +98,13 @@ class EventHandler:
                         goal = (grid_x, grid_y)
                         path = find_path(deck, start, goal)
                         if path:
-                            self.game_state.selected_crew.target_object = None  # Clear any previous target
+                            self.game_state.selected_crew.target_object = None
                             self.game_state.selected_crew.set_path(path)
 
     def handle_mouse_motion(self, event):
         if self.game_state.cable_view_active:
             mouse_x, mouse_y = pygame.mouse.get_pos()
-            world_x, world_y = self.game_state.camera.screen_to_world(mouse_x, mouse_y)
-            # Convert world coordinates to grid coordinates
-            grid_x = int(world_x / TILE_SIZE)
-            grid_y = int(world_y / TILE_SIZE)
+            grid_x, grid_y = self.game_state.camera.screen_to_grid(mouse_x, mouse_y)
             self.game_state.cable_system.update_drag(grid_x, grid_y)
 
     def handle_mouse_up(self, event):

@@ -47,17 +47,34 @@ class Camera:
         self.x += (new_world_x - old_world_x) * self.zoom
         self.y += (new_world_y - old_world_y) * self.zoom
 
-    def screen_to_world(self, screen_x: int, screen_y: int):
+    def screen_to_world(self, screen_x: int, screen_y: int) -> tuple[float, float]:
         """Convert screen coordinates to world coordinates"""
+        # First remove camera offset, then remove zoom
         world_x = (screen_x - self.x) / self.zoom
         world_y = (screen_y - self.y) / self.zoom
         return world_x, world_y
 
-    def world_to_screen(self, world_x: int, world_y: int):
+    def world_to_screen(self, world_x: float, world_y: float) -> tuple[int, int]:
         """Convert world coordinates to screen coordinates"""
-        screen_x = world_x * self.zoom + self.x
-        screen_y = world_y * self.zoom + self.y
+        # First apply zoom, then add camera offset
+        screen_x = int(world_x * self.zoom + self.x)
+        screen_y = int(world_y * self.zoom + self.y)
         return screen_x, screen_y
+
+    def screen_to_grid(self, screen_x: int, screen_y: int) -> tuple[int, int]:
+        """Convert screen coordinates to grid coordinates"""
+        from utils.constants import GameConstants
+        world_x, world_y = self.screen_to_world(screen_x, screen_y)
+        grid_x = int(world_x / GameConstants.get_instance().TILE_SIZE)
+        grid_y = int(world_y / GameConstants.get_instance().TILE_SIZE)
+        return grid_x, grid_y
+
+    def grid_to_screen(self, grid_x: int, grid_y: int) -> tuple[int, int]:
+        """Convert grid coordinates to screen coordinates"""
+        from utils.constants import GameConstants
+        world_x = grid_x * GameConstants.get_instance().TILE_SIZE
+        world_y = grid_y * GameConstants.get_instance().TILE_SIZE
+        return self.world_to_screen(world_x, world_y)
 
     def move(self, dx, dy):
         """Move the camera by the given delta x and y amounts"""

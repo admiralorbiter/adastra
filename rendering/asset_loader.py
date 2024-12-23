@@ -1,5 +1,6 @@
 import pygame
 import os
+from utils.constants import GameConstants
 
 class AssetLoader:
     _instance = None
@@ -29,7 +30,8 @@ class AssetLoader:
         try:
             image = pygame.image.load(path)
             if scale:
-                return pygame.transform.scale(image, (32, 32))
+                tile_size = GameConstants.get_instance().TILE_SIZE
+                return pygame.transform.scale(image, (tile_size, tile_size))
             return image
         except pygame.error as e:
             print(f"Warning: Could not load image {path}: {e}")

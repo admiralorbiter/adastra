@@ -4,8 +4,7 @@ from world.items import ItemType
 from world.modules import LifeSupportModule, ReactorModule, EngineModule
 from world.objects import Bed, StorageContainer, Tank
 from rendering.asset_loader import AssetLoader
-
-TILE_SIZE = 32  # Base tile size
+from utils.constants import GameConstants
 
 class ShipRenderer:
     @staticmethod
@@ -14,7 +13,7 @@ class ShipRenderer:
             return
 
         deck = ship.decks[0]
-        tile_size = int(TILE_SIZE * camera.zoom)  # Scale tile size based on zoom level
+        tile_size = int(GameConstants.get_instance().TILE_SIZE * camera.zoom)  # Scale tile size based on zoom level
         
         # Get current build item if in build mode and build_ui exists
         current_item = build_ui.build_system.get_current_item() if build_ui else None
@@ -25,7 +24,7 @@ class ShipRenderer:
         for y in range(deck.height):
             for x in range(deck.width):
                 tile = deck.tiles[y][x]
-                screen_x, screen_y = camera.world_to_screen(x * TILE_SIZE, y * TILE_SIZE)
+                screen_x, screen_y = camera.world_to_screen(x * GameConstants.get_instance().TILE_SIZE, y * GameConstants.get_instance().TILE_SIZE)
                 rect = pygame.Rect(screen_x, screen_y, tile_size, tile_size)
                 
                 # Draw the tile
@@ -159,33 +158,33 @@ class ShipRenderer:
         # Draw crew members with scaled size
         for crew_member in ship.crew:
             screen_x, screen_y = camera.world_to_screen(
-                crew_member.x * TILE_SIZE + TILE_SIZE // 2,
-                crew_member.y * TILE_SIZE + TILE_SIZE // 2
+                crew_member.x * GameConstants.get_instance().TILE_SIZE + GameConstants.get_instance().TILE_SIZE // 2,
+                crew_member.y * GameConstants.get_instance().TILE_SIZE + GameConstants.get_instance().TILE_SIZE // 2
             )
-            radius = int((TILE_SIZE//3) * camera.zoom)
+            radius = int((GameConstants.get_instance().TILE_SIZE//3) * camera.zoom)
             pygame.draw.circle(screen, (0, 255, 0), (screen_x, screen_y), radius)
 
         # Draw selected crew highlight with scaled size
         if selected_crew:
             screen_x, screen_y = camera.world_to_screen(
-                selected_crew.x * TILE_SIZE + TILE_SIZE // 2,
-                selected_crew.y * TILE_SIZE + TILE_SIZE // 2
+                selected_crew.x * GameConstants.get_instance().TILE_SIZE + GameConstants.get_instance().TILE_SIZE // 2,
+                selected_crew.y * GameConstants.get_instance().TILE_SIZE + GameConstants.get_instance().TILE_SIZE // 2
             )
-            radius = int((TILE_SIZE//2) * camera.zoom)
+            radius = int((GameConstants.get_instance().TILE_SIZE//2) * camera.zoom)
             pygame.draw.circle(screen, (255, 255, 255), (screen_x, screen_y), max(1, int(2 * camera.zoom)))
 
             if selected_crew.move_path:
                 path_points = []
                 start_x, start_y = camera.world_to_screen(
-                    selected_crew.x * TILE_SIZE + TILE_SIZE // 2,
-                    selected_crew.y * TILE_SIZE + TILE_SIZE // 2
+                    selected_crew.x * GameConstants.get_instance().TILE_SIZE + GameConstants.get_instance().TILE_SIZE // 2,
+                    selected_crew.y * GameConstants.get_instance().TILE_SIZE + GameConstants.get_instance().TILE_SIZE // 2
                 )
                 path_points.append((start_x, start_y))
                 
                 for x, y in selected_crew.move_path:
                     screen_x, screen_y = camera.world_to_screen(
-                        x * TILE_SIZE + TILE_SIZE // 2,
-                        y * TILE_SIZE + TILE_SIZE // 2
+                        x * GameConstants.get_instance().TILE_SIZE + GameConstants.get_instance().TILE_SIZE // 2,
+                        y * GameConstants.get_instance().TILE_SIZE + GameConstants.get_instance().TILE_SIZE // 2
                     )
                     path_points.append((screen_x, screen_y))
                 pygame.draw.lines(screen, (255, 255, 0), False, path_points, 2)
@@ -196,8 +195,8 @@ class ShipRenderer:
                 for x in range(deck.width):
                     tile = deck.tiles[y][x]
                     if tile and tile.object and isinstance(tile.object, Bed):
-                        screen_x, screen_y = camera.world_to_screen(x * TILE_SIZE, y * TILE_SIZE)
-                        tile_size = int(TILE_SIZE * camera.zoom)
+                        screen_x, screen_y = camera.world_to_screen(x * GameConstants.get_instance().TILE_SIZE, y * GameConstants.get_instance().TILE_SIZE)
+                        tile_size = int(GameConstants.get_instance().TILE_SIZE * camera.zoom)
                         pygame.draw.rect(screen, (0, 255, 255, 128), 
                                        (screen_x, screen_y, tile_size, tile_size), 2)
 
@@ -205,7 +204,7 @@ class ShipRenderer:
         for y in range(deck.height):
             for x in range(deck.width):
                 tile = deck.tiles[y][x]
-                screen_x, screen_y = camera.world_to_screen(x * TILE_SIZE, y * TILE_SIZE)
+                screen_x, screen_y = camera.world_to_screen(x * GameConstants.get_instance().TILE_SIZE, y * GameConstants.get_instance().TILE_SIZE)
                 
                 # Highlight beds if crew is selected
                 if selected_crew and tile.object and isinstance(tile.object, Bed):
@@ -214,7 +213,7 @@ class ShipRenderer:
         
         # Draw crew members
         for crew in ship.crew:
-            screen_x, screen_y = camera.world_to_screen(crew.x * TILE_SIZE, crew.y * TILE_SIZE)
+            screen_x, screen_y = camera.world_to_screen(crew.x * GameConstants.get_instance().TILE_SIZE, crew.y * GameConstants.get_instance().TILE_SIZE)
             color = (0, 255, 0)  # Default color
             if crew == selected_crew:
                 # Draw selection highlight

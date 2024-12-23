@@ -1,6 +1,7 @@
 import pygame
+from utils.constants import GameConstants
 
-TILE_SIZE = 32
+TILE_SIZE = GameConstants.get_instance().TILE_SIZE
 
 class CableRenderer:
     def __init__(self):
@@ -17,11 +18,7 @@ class CableRenderer:
         # Draw existing cables
         for (x, y), cable in cable_system.cables.items():
             if 0 <= x < deck.width and 0 <= y < deck.height:
-                # Convert grid coordinates to world coordinates
-                world_x = x * TILE_SIZE
-                world_y = y * TILE_SIZE
-                # Convert world coordinates to screen coordinates
-                screen_x, screen_y = camera.world_to_screen(world_x, world_y)
+                screen_x, screen_y = camera.grid_to_screen(x, y)
                 rect = pygame.Rect(screen_x, screen_y, tile_size, tile_size)
                 
                 # Draw cable with scaled border
@@ -42,11 +39,7 @@ class CableRenderer:
         # Draw preview cables
         for x, y in cable_system.preview_cables:
             if 0 <= x < deck.width and 0 <= y < deck.height:
-                # Convert grid coordinates to world coordinates
-                world_x = x * TILE_SIZE
-                world_y = y * TILE_SIZE
-                # Convert world coordinates to screen coordinates
-                screen_x, screen_y = camera.world_to_screen(world_x, world_y)
+                screen_x, screen_y = camera.grid_to_screen(x, y)
                 rect = pygame.Rect(screen_x, screen_y, tile_size, tile_size)
                 
                 # Create scaled semi-transparent preview
