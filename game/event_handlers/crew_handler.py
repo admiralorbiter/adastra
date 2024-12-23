@@ -18,11 +18,12 @@ class CrewEventHandler(BaseEventHandler):
         # Check for crew selection
         for crew in self.game_state.ship.crew:
             if int(crew.x) == grid_x and int(crew.y) == grid_y:
+                # Allow selecting sleeping crew members, but don't allow movement
                 self.game_state.selected_crew = crew
                 return True
         
         # Handle crew movement or bed interaction
-        if self.game_state.selected_crew:
+        if self.game_state.selected_crew and self.game_state.selected_crew.current_action != "sleeping":
             deck = self.game_state.ship.decks[0]
             if grid_x < deck.width and grid_y < deck.height:
                 tile = deck.tiles[grid_y][grid_x]

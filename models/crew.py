@@ -44,6 +44,9 @@ class CrewMember:
         # Skip updates if currently sleeping
         if self.current_action == "sleeping":
             self.rest()
+            # Clear any movement path if we somehow got one while sleeping
+            self.move_path = []
+            self.target_object = None
             return
 
         # Gradually decrease needs over time
@@ -103,7 +106,13 @@ class CrewMember:
         self.hunger = min(100, self.hunger + 30)
 
     def rest(self):
-        self.sleep = min(100, self.sleep + 20) 
+        old_sleep = self.sleep
+        self.sleep = min(100, self.sleep + 20)
+        
+        # Wake up if fully rested
+        if old_sleep < 100 and self.sleep >= 100:
+            self.current_action = None
+            self.target_object = None
 
     def set_path(self, path):
         self.move_path = path[1:]  # Skip first position (current position) 
