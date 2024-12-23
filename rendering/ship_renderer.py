@@ -1,7 +1,8 @@
 import pygame
 
+from world.items import ItemType
 from world.modules import LifeSupportModule, ReactorModule, EngineModule
-from world.objects import Bed, StorageContainer
+from world.objects import Bed, StorageContainer, Tank
 from rendering.asset_loader import AssetLoader
 
 TILE_SIZE = 32
@@ -54,6 +55,14 @@ class ShipRenderer:
                         color = (139, 69, 19)  # Brown for bed
                     elif isinstance(tile.object, StorageContainer):
                         color = (255, 255, 0)  # Yellow for storage
+                    elif isinstance(tile.object, Tank):
+                        # Draw tank with different color based on contents
+                        if tile.object.get_amount(ItemType.OXYGEN) > 0:
+                            color = (100, 100, 255)  # Blue for oxygen
+                        elif tile.object.get_amount(ItemType.WATER) > 0:
+                            color = (0, 191, 255)  # Light blue for water
+                        else:
+                            color = (150, 150, 150)  # Gray for empty tank
 
                 pygame.draw.rect(screen, color, rect)
                 pygame.draw.rect(screen, (0, 0, 0), rect, 1)

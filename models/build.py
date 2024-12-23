@@ -2,7 +2,7 @@ from enum import Enum, auto
 from dataclasses import dataclass
 
 from world.modules import LifeSupportModule, ReactorModule, EngineModule
-from world.objects import Bed, StorageContainer
+from world.objects import Bed, StorageContainer, Tank
 from world.tile import Tile
 
 class BuildMode(Enum):
@@ -107,17 +107,22 @@ class BuildableItem:
                 deck.tiles[y][x].wall = True
                 return True
         
+        # Handle object placement
+        if self.name == "Storage Tank":
+            deck.tiles[y][x].object = Tank()
+            return True
+        elif self.name == "Storage Container":
+            deck.tiles[y][x].object = StorageContainer()
+            return True
+        elif self.name == "Bed":
+            deck.tiles[y][x].object = Bed()
+            return True
+        
         # Handle other building types...
         elif self.name == "Basic Floor":
             if not deck.tiles[y][x]:
                 deck.tiles[y][x] = Tile(x=x, y=y)
             deck.tiles[y][x].wall = False
-            return True
-        elif self.name == "Bed":
-            deck.tiles[y][x].object = Bed()
-            return True
-        elif self.name == "Storage Container":
-            deck.tiles[y][x].object = StorageContainer()
             return True
         elif self.name == "Power Cable":
             ship.cable_system.add_cable(x, y)
@@ -146,7 +151,8 @@ class BuildSystem:
             ]),
             BuildMode.OBJECT: BuildCategory(BuildMode.OBJECT, [
                 BuildableItem("Bed", "A place for crew to rest", (139, 69, 19)),
-                BuildableItem("Storage Container", "Store items and resources", (160, 82, 45))
+                BuildableItem("Storage Container", "Store items and resources", (160, 82, 45)),
+                BuildableItem("Storage Tank", "Store liquids and gases", (0, 191, 255))
             ]),
             BuildMode.MODULE: BuildCategory(BuildMode.MODULE, [
                 BuildableItem("Life Support", "Generates oxygen for the ship", (100, 100, 255)),

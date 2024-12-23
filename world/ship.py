@@ -1,5 +1,5 @@
 from world.items import ItemType
-from world.objects import StorageContainer
+from world.objects import StorageContainer, Tank
 from world.tile import Tile
 
 
@@ -16,7 +16,9 @@ class Ship:
         # New oxygen-related attributes
         self.oxygen_capacity = 100.0  # Maximum oxygen the ship can hold
         self.oxygen_consumption_per_crew = 1  # Oxygen used per crew member per second
-
+        self.oxygen_tanks = []  # List to store oxygen tanks
+        self.water_tanks = []   # List to store water tanks
+        
     def add_deck(self, deck):
         self.decks.append(deck)
         self.calculate_oxygen_capacity()
@@ -60,6 +62,30 @@ class Ship:
         # Update oxygen levels
         oxygen_change = (total_oxygen_production - total_oxygen_consumption)
         self.global_oxygen = max(0.0, min(self.oxygen_capacity, self.global_oxygen + oxygen_change))
+
+        # Update resources in tanks
+        if oxygen_change > 0:
+            # Add oxygen to tanks
+            remaining_oxygen = oxygen_change
+            for deck in self.decks:
+                for y in range(deck.height):
+                    for x in range(deck.width):
+                        tile = deck.tiles[y][x]
+                        if tile.object and isinstance(tile.object, Tank):
+                            remaining_oxygen = tile.object.add_resource(ItemType.OXYGEN, remaining_oxygen)
+                            if remaining_oxygen <= 0:
+                                break
+        else:
+            # Remove oxygen from tanks
+            needed_oxygen = -oxygen_change
+            for deck in self.decks:
+                for y in range(deck.height):
+                    for x in range(deck.width):
+                        tile = deck.tiles[y][x]
+                        if tile.object and isinstance(tile.object, Tank):
+                            needed_oxygen -= tile.object.remove_resource(ItemType.OXYGEN, needed_oxygen)
+                            if needed_oxygen <= 0:
+                                break
 
     def add_crew_member(self, crew_member):
         crew_member.ship = self  # Set the ship reference
@@ -162,3 +188,18 @@ class Ship:
                             nearest_pos = (tile_x, tile_y)
         
         return (nearest_storage, nearest_pos) if nearest_storage else None
+
+    def add_tank(self, tank: Tank):
+        if tank.resource_type == ItemType.OXYGEN:
+            self.oxygen_tanks.append(tank)
+        elif tank.resource_type == ItemType.WATER:
+            self.water_tanks.append(tank)
+
+    def get_total_oxygen(self) -> float:
+        return sum(tank.current_amount for tank in self.oxygen_tanks)
+
+    def get_total_oxygen_capacity(self) -> float:
+        return sum(tank.capacity for tank in self.oxygen_tanks)
+
+    def get_total_water(self) -> float:
+        return sum(tank.current_amount for tank in self.water_tanks)

@@ -48,3 +48,43 @@ class StorageContainer(BaseObject):
         dx = abs(x - tile_x)
         dy = abs(y - tile_y)
         return dx + dy == 1  # Adjacent tile
+
+class Tank(BaseObject):
+    def __init__(self, name="Storage Tank", capacity: int = 1000):
+        super().__init__(name)
+        self.solid = True
+        self.walkable = False
+        self.capacity = capacity
+        self.resources = {
+            ItemType.WATER: 0,
+            ItemType.OXYGEN: 0
+        }
+
+    def add_resource(self, resource_type: ItemType, amount: float) -> float:
+        """Add resource to tank, returns amount that couldn't be added"""
+        if resource_type not in self.resources:
+            return amount
+            
+        space_left = self.capacity - self.resources[resource_type]
+        amount_to_add = min(amount, space_left)
+        self.resources[resource_type] += amount_to_add
+        return amount - amount_to_add
+
+    def remove_resource(self, resource_type: ItemType, amount: float) -> float:
+        """Remove resource from tank, returns amount actually removed"""
+        if resource_type not in self.resources:
+            return 0
+            
+        amount_to_remove = min(amount, self.resources[resource_type])
+        self.resources[resource_type] -= amount_to_remove
+        return amount_to_remove
+
+    def get_fill_percentage(self, resource_type: ItemType) -> float:
+        """Get fill percentage for a specific resource"""
+        if resource_type not in self.resources:
+            return 0
+        return (self.resources[resource_type] / self.capacity) * 100
+
+    def get_amount(self, resource_type: ItemType) -> float:
+        """Get current amount of a specific resource"""
+        return self.resources.get(resource_type, 0)
