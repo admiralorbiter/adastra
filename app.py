@@ -45,6 +45,7 @@ def main():
             game_state.ship, 
             game_state.camera, 
             None if game_state.show_cables else game_state.selected_crew,
+            game_state.selected_enemy,
             game_state.build_ui,
             event_handler.rect_select_start,
             event_handler.rect_select_end

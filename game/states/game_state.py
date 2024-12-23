@@ -15,6 +15,7 @@ from game.states.game_states import GameState as GameStateEnum
 class GameState:
     def __init__(self):
         self.selected_crew = None
+        self.selected_enemy = None
         self.build_ui = None
         self.ship = None
         self.camera = None

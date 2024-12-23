@@ -15,6 +15,7 @@ class Ship:
         self.inventory_system.ship = self
         self.crew_manager = CrewManager()
         self.deck_manager = DeckManager()
+        self.enemies = []  # List to store enemies
 
     # Properties to maintain backward compatibility
     @property
@@ -56,11 +57,16 @@ class Ship:
         if dt == 0:  # Skip updates when paused
             return
             
-        # Update all systems
+        # Update existing systems
         for deck in self.decks:
             deck.update(dt)
         
         self.crew_manager.update(dt)
+        
+        # Update enemies
+        for enemy in self.enemies:
+            enemy.update(dt)
+            
         if self.cable_system:
             self.cable_system.update_networks()
         self.resource_manager.update(dt, self)
@@ -97,3 +103,13 @@ class Ship:
     def find_nearest_storage(self, x: int, y: int):
         """Find nearest storage container with food"""
         return self.inventory_system.find_nearest_storage(x, y)
+
+    def add_enemy(self, enemy):
+        """Add a new enemy to the ship"""
+        enemy.ship = self
+        self.enemies.append(enemy)
+        
+    def remove_enemy(self, enemy):
+        """Remove an enemy from the ship"""
+        if enemy in self.enemies:
+            self.enemies.remove(enemy)

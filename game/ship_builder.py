@@ -4,6 +4,7 @@ from world.ship import Ship
 from world.modules import LifeSupportModule, ReactorModule
 from world.objects import Bed, StorageContainer
 from models.crew import CrewMember, Skill
+from models.enemies import RangedEnemy
 from world.items import FoodItem
 
 def create_basic_ship(cable_system=None):
@@ -60,5 +61,10 @@ def create_basic_ship(cable_system=None):
     ship.add_crew_member(engineer)
     ship.add_crew_member(pilot)
     ship.add_crew_member(scientist)
+
+    # Add enemy in bottom right corner
+    enemy = RangedEnemy("Enemy Scout")
+    enemy.x, enemy.y = 8, 8  # Bottom-right area, away from walls
+    ship.add_enemy(enemy)
 
     return ship
