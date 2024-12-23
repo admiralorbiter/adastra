@@ -30,7 +30,7 @@ class CrewMember:
 
     def update(self, dt):
         # Gradually decrease needs over time
-        self.hunger = max(0, self.hunger - 0.1)
+        self.hunger = max(0, self.hunger - 0.01)
         self.sleep = max(0, self.sleep - 0.05)
         
         # Calculate mood based on needs

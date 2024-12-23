@@ -68,7 +68,7 @@ def main():
         # Draw UI on top
         game_state.build_ui.draw(game_state.screen)
         resource_ui.draw_oxygen_status(game_state.screen, game_state.ship, 20, 20)
-        time_ui.draw_time_controls(game_state.screen, game_state.time_manager, 20, 70)
+        time_ui.draw_time_controls(game_state.screen, game_state.time_manager, game_state.build_ui)
         pygame.display.flip()
 
     pygame.quit()
