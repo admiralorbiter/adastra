@@ -175,7 +175,12 @@ class LaserTurret(Weapon):
             print(f"Current target {self.target.name} is dead - resetting target")
             self.target = None
             
-        if not self.target and self.powered and self.ship:
+        # Try to fire at current target if we have one
+        if self.target and self.can_attack():
+            print("Attempting to fire at current target...")
+            self.fire()
+        # Otherwise look for a new target
+        elif not self.target and self.powered and self.ship:
             print("\nSearching for new target...")
             self.target = self.find_target(self.ship.enemies)
             if self.target:
