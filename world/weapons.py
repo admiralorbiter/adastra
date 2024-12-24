@@ -14,35 +14,49 @@ class Weapon(BaseObject):
         self.powered = False
         self.power_required = 2
         self.target: Optional[Enemy] = None
+        self._x = 0
+        self._y = 0
+        self.enemies = []
+        
+    @property
+    def x(self):
+        return self._x
+        
+    @x.setter
+    def x(self, value):
+        self._x = value
+        
+    @property
+    def y(self):
+        return self._y
+        
+    @y.setter
+    def y(self, value):
+        self._y = value
+
+    def set_position(self, x: int, y: int):
+        """Explicitly set the weapon position"""
+        self._x = x
+        self._y = y
+        print(f"Setting weapon position to ({x}, {y})")
 
     def update(self, dt):
-        # Store previous power state
-        was_powered = self.powered
+        # Store coordinates for debugging
+        print(f"\nWeapon position check - x: {self._x}, y: {self._y}")
+        print(f"Number of enemies available: {len(self.enemies)}")
         
-        # Check if connected to power
+        # Check power state
         if hasattr(self, 'tile') and self.tile:
             self.powered = self.tile.has_power(self.power_required)
-            print(f"Power check - Has tile: True, Has power: {self.powered}")
+            print(f"Power check: {self.powered}")
         else:
             self.powered = False
-            print("Power check - Has tile: False")
-            
-        # If we just got power, clear target to force retargeting
-        if not was_powered and self.powered:
-            print("Just got power - clearing target")
-            self.target = None
             
         if not self.powered:
-            print("Not powered - skipping update")
             return
             
         if self.current_cooldown > 0:
             self.current_cooldown = max(0, self.current_cooldown - dt)
-            print(f"Cooldown active: {self.current_cooldown}")
-            
-        if self.target and self.can_attack():
-            print("Conditions met - firing!")
-            self.fire()
 
     def can_attack(self) -> bool:
         print("\nChecking can_attack:")
@@ -63,8 +77,8 @@ class Weapon(BaseObject):
             return False
             
         # Check if target is in range using tile coordinates
-        dx = self.target.x - self.x
-        dy = self.target.y - self.y
+        dx = self.target.x - self._x
+        dy = self.target.y - self._y
         distance = (dx ** 2 + dy ** 2) ** 0.5
         in_range = distance <= self.range
         print(f"  Distance to target: {distance}, Range: {self.range}, In range: {in_range}")
@@ -79,32 +93,26 @@ class Weapon(BaseObject):
         closest_enemy = None
         closest_distance = float('inf')
         
-        print(f"\nWeapon at ({self.x}, {self.y}) searching for targets")
+        print(f"\nWeapon at ({self._x}, {self._y}) searching for targets")
+        print(f"Number of enemies to check: {len(enemies)}")
         print(f"Weapon range: {self.range}")
         
         for enemy in enemies:
             if enemy.is_dead():
-                print(f"Enemy at ({enemy.x}, {enemy.y}) is dead, skipping")
+                print(f"Skipping dead enemy at ({enemy.x}, {enemy.y})")
                 continue
             
-            dx = enemy.x - self.x
-            dy = enemy.y - self.y
+            dx = enemy.x - self._x
+            dy = enemy.y - self._y
             distance = (dx ** 2 + dy ** 2) ** 0.5
             
             print(f"Checking enemy at ({enemy.x}, {enemy.y}):")
-            print(f"  dx: {dx}, dy: {dy}")
-            print(f"  distance: {distance}")
-            print(f"  in range? {distance <= self.range}")
+            print(f"  Distance: {distance}, Range: {self.range}")
             
             if distance <= self.range and distance < closest_distance:
                 closest_enemy = enemy
                 closest_distance = distance
-                print(f"  -> New closest target at distance {distance}")
-        
-        if closest_enemy:
-            print(f"Found target at ({closest_enemy.x}, {closest_enemy.y})")
-        else:
-            print("No valid target found")
+                print(f"  -> New closest target found at distance {distance}!")
         
         return closest_enemy
 
@@ -118,18 +126,29 @@ class LaserTurret(Weapon):
         self.firing_animation_time = 0
         self.firing = False
     
-    def fire(self):
-        if self.target and self.can_attack():
-            print(f"LaserTurret firing at target! Target health before: {self.target.health}")
-            self.target.take_damage(self.damage)
-            print(f"Target health after: {self.target.health}")
-            self.current_cooldown = self.attack_cooldown
-            self.firing = True
-            self.firing_animation_time = 0.1
-    
     def update(self, dt):
+        # Call parent update first to handle power check
         super().update(dt)
-        print(f"LaserTurret update - Firing: {self.firing}, Animation time: {self.firing_animation_time}")
+        
+        if not self.powered:
+            return
+        
+        print(f"\nLaserTurret at ({self._x}, {self._y}):")
+        print(f"  Target: {self.target}")
+        print(f"  Cooldown: {self.current_cooldown}")
+        print(f"  Firing: {self.firing}")
+        print(f"  Range: {self.range}")
+        print(f"  Number of enemies: {len(self.enemies)}")
+        
+        # Try to find target if we don't have one
+        if not self.target and self.powered:
+            print("No target, searching...")
+            self.target = self.find_target(self.enemies)
+            if self.target:
+                print(f"Found target at ({self.target.x}, {self.target.y})")
+                self.fire()
+        
+        # Handle firing animation
         if self.firing_animation_time > 0:
             self.firing_animation_time -= dt
             if self.firing_animation_time <= 0:

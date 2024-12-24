@@ -67,21 +67,7 @@ class Ship:
             print("\n--- Updating Power Networks ---")
             self.cable_system.update_networks()
         
-        # Update existing systems
-        for deck in self.decks:
-            deck.update(dt)
-        
-        self.crew_manager.update(dt)
-        
-        # Update enemies and remove dead ones
-        self.enemies = [enemy for enemy in self.enemies if not enemy.is_dead()]
-        
-        for enemy in self.enemies:
-            enemy.update(dt)
-            
-        self.resource_manager.update(dt, self)
-
-        # Update weapons and find targets
+        # Update weapons BEFORE other systems
         print("\n--- Weapon Updates ---")
         for deck in self.decks:
             for y in range(deck.height):
@@ -89,21 +75,38 @@ class Ship:
                     tile = deck.tiles[y][x]
                     if isinstance(tile.object, Weapon):
                         weapon = tile.object
-                        weapon.x = x
-                        weapon.y = y
                         
-                        # Debug power state
-                        print(f"\nWeapon at ({x},{y}):")
-                        if hasattr(weapon, 'tile'):
-                            cable = weapon.tile.cable
-                            if cable:
-                                print(f"Cable powered: {cable.powered}")
-                                if cable.network:
-                                    print(f"Network power: {cable.network.available_power}")
-                    
-                        if not weapon.target or not weapon.can_attack():
-                            weapon.target = weapon.find_target(self.enemies)
+                        # Set position and references FIRST
+                        weapon.set_position(x, y)  # Use new explicit position setter
+                        weapon.tile = tile
+                        weapon.enemies = self.enemies  # Pass enemies list directly, no copy needed
+                        
+                        print(f"\nProcessing weapon at ({x},{y}):")
+                        print(f"Enemies in range: {len(weapon.enemies)}")
+                        
+                        # Update weapon
                         weapon.update(dt)
+                        
+                        # Handle targeting and firing
+                        if weapon.powered:
+                            if not weapon.target or weapon.target.is_dead():
+                                weapon.target = weapon.find_target(self.enemies)
+                            if weapon.target:
+                                print(f"Target found at ({weapon.target.x}, {weapon.target.y})")
+                                weapon.fire()
+        
+        # Update remaining systems
+        for deck in self.decks:
+            deck.update(dt)
+        
+        self.crew_manager.update(dt)
+        
+        # Update enemies and remove dead ones
+        self.enemies = [enemy for enemy in self.enemies if not enemy.is_dead()]
+        for enemy in self.enemies:
+            enemy.update(dt)
+            
+        self.resource_manager.update(dt, self)
 
     def add_deck(self, deck):
         """Add a new deck to the ship"""
