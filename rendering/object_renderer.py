@@ -1,12 +1,18 @@
 import pygame
 
+from utils.constants import GameConstants
 from world import camera
 from .base_renderer import BaseRenderer
 from world.objects import Bed, StorageContainer, Tank
 from world.weapons import LaserTurret
 from world.items import ItemType
+from rendering.asset_loader import AssetLoader
 
 class ObjectRenderer(BaseRenderer):
+    def __init__(self):
+        self.game_constants = GameConstants.get_instance()
+        self.asset_loader = AssetLoader.get_instance()
+
     def draw_objects(self, screen, deck, camera):
         """Draw all objects"""
         tile_size = self.get_scaled_size(camera)
@@ -20,11 +26,34 @@ class ObjectRenderer(BaseRenderer):
                 screen_x, screen_y = self.get_screen_position(camera, x, y)
                 rect = pygame.Rect(screen_x, screen_y, tile_size, tile_size)
                 
-                self._draw_object(screen, tile.object, rect)
+                self._draw_object(screen, tile.object, rect, camera)
 
-    def _draw_object(self, screen, obj, rect):
-        """Draw a specific object"""
-        if isinstance(obj, LaserTurret):
+    def _draw_object(self, screen, obj, rect, camera):
+        """Draw an object and any associated targeting lines"""
+        # Get object color or image based on type
+        if hasattr(obj, 'image_name'):
+            # Draw using sprite if object has an image name
+            image = self.asset_loader.get_image(obj.image_name)
+            screen.blit(image, rect)
+        else:
+            # Fallback to colored rectangle if no image
+            color = getattr(obj, 'color', (128, 128, 128))  # Default gray
+            pygame.draw.rect(screen, color, rect)
+        
+        # If it's a weapon with a target, draw targeting line
+        if hasattr(obj, 'target') and obj.target:
+            start_pos = (rect.centerx, rect.centery)
+            
+            # Use BaseRenderer's helper method
+            target_screen_pos = self.get_screen_position(
+                camera,
+                obj.target.x,
+                obj.target.y
+            )
+            
+            pygame.draw.line(screen, (255, 0, 0), start_pos, target_screen_pos, 2)
+
+        elif isinstance(obj, LaserTurret):
             # Draw range indicator (semi-transparent circle)
             range_radius = obj.range * rect.width
             range_surface = pygame.Surface((range_radius * 2, range_radius * 2), pygame.SRCALPHA)
@@ -111,3 +140,14 @@ class ObjectRenderer(BaseRenderer):
             pygame.draw.rect(screen, color, rect)
             
         pygame.draw.rect(screen, (0, 0, 0), rect, 1)  # Border 
+
+    def _get_screen_rect(self, x, y, camera):
+        """Convert tile coordinates to screen rectangle"""
+        screen_x = x * self.game_constants.TILE_SIZE - camera.x
+        screen_y = y * self.game_constants.TILE_SIZE - camera.y
+        return pygame.Rect(
+            screen_x,
+            screen_y,
+            self.game_constants.TILE_SIZE,
+            self.game_constants.TILE_SIZE
+        ) 

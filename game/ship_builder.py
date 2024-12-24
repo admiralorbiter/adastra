@@ -39,10 +39,14 @@ def create_basic_ship(cable_system=None):
     storage.add_item(FoodItem(quantity=50))
     main_deck.tiles[5][4].object = storage
 
-    # Add a laser turret for defense - moved closer to enemy spawn
+    # Add a laser turret for defense
+    print("\n--- Adding Laser Turret ---")
     turret = LaserTurret()
-    main_deck.tiles[6][7].object = turret  # Moved to (6,7) to be within range of (8,8)
+    main_deck.tiles[6][7].object = turret
     turret.tile = main_deck.tiles[6][7]
+    turret.x = 6
+    turret.y = 7
+    print(f"Turret placed at ({turret.x}, {turret.y})")
 
     # Create room from all non-wall tiles
     room_tiles = [tile for row in main_deck.tiles for tile in row if not tile.wall]

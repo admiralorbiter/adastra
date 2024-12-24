@@ -14,49 +14,47 @@ class Weapon(BaseObject):
         self.powered = False
         self.power_required = 2
         self.target: Optional[Enemy] = None
-        self._x = 0
-        self._y = 0
-        self.enemies = []
+        self.ship = None  # Reference to parent ship
         
-    @property
-    def x(self):
-        return self._x
+    def set_ship(self, ship):
+        """Set reference to parent ship"""
+        print(f"Setting ship reference for {self.name}")
+        print(f"Previous ship reference: {self.ship}")
+        print(f"New ship object id: {id(ship)}")
+        self.ship = ship
+        print(f"Stored ship reference id: {id(self.ship)}")
         
-    @x.setter
-    def x(self, value):
-        self._x = value
-        
-    @property
-    def y(self):
-        return self._y
-        
-    @y.setter
-    def y(self, value):
-        self._y = value
-
     def set_position(self, x: int, y: int):
         """Explicitly set the weapon position"""
-        self._x = x
-        self._y = y
+        self.x = x
+        self.y = y
         print(f"Setting weapon position to ({x}, {y})")
 
     def update(self, dt):
-        # Store coordinates for debugging
-        print(f"\nWeapon position check - x: {self._x}, y: {self._y}")
-        print(f"Number of enemies available: {len(self.enemies)}")
+        print(f"\n=== WEAPON BASE UPDATE ===")
+        print(f"Weapon: {self.name}")
+        print(f"Position: ({self.x}, {self.y})")
+        print(f"Has ship reference: {self.ship is not None}")
+        if self.ship:
+            print(f"Ship enemies count: {len(self.ship.enemies)}")
+            for enemy in self.ship.enemies:
+                print(f"  - Enemy {enemy.name} at ({enemy.x}, {enemy.y}) health: {enemy.health}")
         
         # Check power state
         if hasattr(self, 'tile') and self.tile:
             self.powered = self.tile.has_power(self.power_required)
-            print(f"Power check: {self.powered}")
+            print(f"Power check: {self.powered} (requires {self.power_required})")
         else:
             self.powered = False
+            print("No tile reference - unpowered")
             
         if not self.powered:
+            print("Weapon unpowered - skipping update")
             return
             
         if self.current_cooldown > 0:
             self.current_cooldown = max(0, self.current_cooldown - dt)
+            print(f"Cooldown active: {self.current_cooldown:.2f}s remaining")
 
     def can_attack(self) -> bool:
         print("\nChecking can_attack:")
@@ -77,43 +75,61 @@ class Weapon(BaseObject):
             return False
             
         # Check if target is in range using tile coordinates
-        dx = self.target.x - self._x
-        dy = self.target.y - self._y
+        dx = self.target.x - self.x
+        dy = self.target.y - self.y
         distance = (dx ** 2 + dy ** 2) ** 0.5
         in_range = distance <= self.range
         print(f"  Distance to target: {distance}, Range: {self.range}, In range: {in_range}")
         return in_range
 
     def fire(self):
+        print("\n=== FIRE ATTEMPT ===")
         if self.target and self.can_attack():
+            print(f"Firing at {self.target.name}!")
+            print(f"Target health before: {self.target.health}")
             self.target.take_damage(self.damage)
+            print(f"Target health after: {self.target.health}")
             self.current_cooldown = self.attack_cooldown
+            print(f"Weapon on cooldown: {self.attack_cooldown}s")
+        else:
+            print("Cannot fire - conditions not met")
 
     def find_target(self, enemies: List[Enemy]) -> Optional[Enemy]:
+        print("\n=== TARGET SEARCH DEBUG ===")
+        print(f"Weapon at ({self.x}, {self.y})")
+        print(f"Range: {self.range}")
+        
+        if not self.ship or not self.ship.enemies:
+            print("No ship reference or no enemies!")
+            return None
+            
         closest_enemy = None
         closest_distance = float('inf')
         
-        print(f"\nWeapon at ({self._x}, {self._y}) searching for targets")
-        print(f"Number of enemies to check: {len(enemies)}")
-        print(f"Weapon range: {self.range}")
-        
-        for enemy in enemies:
+        for enemy in self.ship.enemies:
+            print(f"\nChecking enemy: {enemy.name}")
+            print(f"Enemy position: ({enemy.x}, {enemy.y})")
+            
             if enemy.is_dead():
-                print(f"Skipping dead enemy at ({enemy.x}, {enemy.y})")
+                print("Enemy is dead, skipping")
                 continue
-            
-            dx = enemy.x - self._x
-            dy = enemy.y - self._y
+                
+            dx = enemy.x - self.x
+            dy = enemy.y - self.y
             distance = (dx ** 2 + dy ** 2) ** 0.5
-            
-            print(f"Checking enemy at ({enemy.x}, {enemy.y}):")
-            print(f"  Distance: {distance}, Range: {self.range}")
+            print(f"Distance to enemy: {distance}")
+            print(f"In range? {distance <= self.range}")
             
             if distance <= self.range and distance < closest_distance:
                 closest_enemy = enemy
                 closest_distance = distance
-                print(f"  -> New closest target found at distance {distance}!")
+                print("New closest target found!")
         
+        if closest_enemy:
+            print(f"Selected target: {closest_enemy.name} at ({closest_enemy.x}, {closest_enemy.y})")
+        else:
+            print("No valid target found")
+            
         return closest_enemy
 
 class LaserTurret(Weapon):
@@ -127,29 +143,56 @@ class LaserTurret(Weapon):
         self.firing = False
     
     def update(self, dt):
-        # Call parent update first to handle power check
+        print("\n=== LASER TURRET UPDATE ===")
+        print(f"Current state:")
+        print(f"  Position: ({self.x}, {self.y})")
+        print(f"  Powered: {self.powered}")
+        print(f"  Current target: {self.target.name if self.target else 'None'}")
+        print(f"  Range: {self.range}")
+        print(f"  Cooldown: {self.current_cooldown:.2f}")
+        
+        if self.ship:
+            print(f"\nShip status:")
+            print(f"  Enemy count: {len(self.ship.enemies)}")
+            for enemy in self.ship.enemies:
+                dx = enemy.x - self.x
+                dy = enemy.y - self.y
+                distance = (dx ** 2 + dy ** 2) ** 0.5
+                print(f"  - Enemy {enemy.name} at ({enemy.x}, {enemy.y})")
+                print(f"    Distance: {distance:.1f}, In range: {distance <= self.range}")
+        else:
+            print("No ship reference!")
+        
+        # Call parent update
         super().update(dt)
         
         if not self.powered:
+            print("Turret unpowered - skipping targeting")
             return
-        
-        print(f"\nLaserTurret at ({self._x}, {self._y}):")
-        print(f"  Target: {self.target}")
-        print(f"  Cooldown: {self.current_cooldown}")
-        print(f"  Firing: {self.firing}")
-        print(f"  Range: {self.range}")
-        print(f"  Number of enemies: {len(self.enemies)}")
-        
-        # Try to find target if we don't have one
-        if not self.target and self.powered:
-            print("No target, searching...")
-            self.target = self.find_target(self.enemies)
+            
+        # Reset target if it's dead or null
+        if self.target and self.target.is_dead():
+            print(f"Current target {self.target.name} is dead - resetting target")
+            self.target = None
+            
+        if not self.target and self.powered and self.ship:
+            print("\nSearching for new target...")
+            self.target = self.find_target(self.ship.enemies)
             if self.target:
-                print(f"Found target at ({self.target.x}, {self.target.y})")
+                print(f"New target acquired: {self.target.name}")
+                print(f"Attempting to fire...")
                 self.fire()
-        
-        # Handle firing animation
-        if self.firing_animation_time > 0:
-            self.firing_animation_time -= dt
-            if self.firing_animation_time <= 0:
-                self.firing = False 
+            else:
+                print("No valid target found")
+
+    def fire(self):
+        print("\n=== FIRE ATTEMPT ===")
+        if self.target and self.can_attack():
+            print(f"Firing at {self.target.name}!")
+            print(f"Target health before: {self.target.health}")
+            self.target.take_damage(self.damage)
+            print(f"Target health after: {self.target.health}")
+            self.current_cooldown = self.attack_cooldown
+            print(f"Weapon on cooldown: {self.attack_cooldown}s")
+        else:
+            print("Cannot fire - conditions not met")

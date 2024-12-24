@@ -1,4 +1,5 @@
-from world.objects import StorageContainer, Weapon
+from world.objects import StorageContainer
+from world.weapons import Weapon
 from world.systems.resource_manager import ResourceManager
 from world.systems.inventory_system import InventorySystem
 from world.systems.crew_manager import CrewManager
@@ -59,54 +60,30 @@ class Ship:
             
         print("\n--- Ship Update ---")
         print(f"Number of enemies: {len(self.enemies)}")
-        for enemy in self.enemies:
-            print(f"Enemy at ({enemy.x}, {enemy.y}) with health {enemy.health}")
         
         # Update cable system FIRST to ensure power state is current
         if self.cable_system:
-            print("\n--- Updating Power Networks ---")
             self.cable_system.update_networks()
         
         # Update weapons BEFORE other systems
-        print("\n--- Weapon Updates ---")
+        print("\n--- Weapon Update Loop ---")
         for deck in self.decks:
+            print(f"Checking deck: {deck.name}")
             for y in range(deck.height):
                 for x in range(deck.width):
                     tile = deck.tiles[y][x]
-                    if isinstance(tile.object, Weapon):
+                    if tile.object and (isinstance(tile.object, Weapon) or 
+                                      type(tile.object).__bases__[0].__name__ == 'Weapon'):
+                        print(f"\nFound weapon at ({x}, {y})")
                         weapon = tile.object
-                        
-                        # Set position and references FIRST
-                        weapon.set_position(x, y)  # Use new explicit position setter
+                        # Re-establish ship reference
+                        if weapon.ship is None:
+                            print("Restoring ship reference")
+                            weapon.set_ship(self)
+                        weapon.set_position(x, y)
                         weapon.tile = tile
-                        weapon.enemies = self.enemies  # Pass enemies list directly, no copy needed
-                        
-                        print(f"\nProcessing weapon at ({x},{y}):")
-                        print(f"Enemies in range: {len(weapon.enemies)}")
-                        
-                        # Update weapon
+                        print(f"Updating weapon: {weapon.name}")
                         weapon.update(dt)
-                        
-                        # Handle targeting and firing
-                        if weapon.powered:
-                            if not weapon.target or weapon.target.is_dead():
-                                weapon.target = weapon.find_target(self.enemies)
-                            if weapon.target:
-                                print(f"Target found at ({weapon.target.x}, {weapon.target.y})")
-                                weapon.fire()
-        
-        # Update remaining systems
-        for deck in self.decks:
-            deck.update(dt)
-        
-        self.crew_manager.update(dt)
-        
-        # Update enemies and remove dead ones
-        self.enemies = [enemy for enemy in self.enemies if not enemy.is_dead()]
-        for enemy in self.enemies:
-            enemy.update(dt)
-            
-        self.resource_manager.update(dt, self)
 
     def add_deck(self, deck):
         """Add a new deck to the ship"""
@@ -150,3 +127,11 @@ class Ship:
         """Remove an enemy from the ship"""
         if enemy in self.enemies:
             self.enemies.remove(enemy)
+
+    def add_weapon(self, weapon: Weapon, deck, x: int, y: int):
+        """Add a weapon to the ship"""
+        print(f"\n--- Adding Weapon to Ship ---")
+        print(f"Adding {weapon.name} at ({x}, {y})")
+        weapon.set_ship(self)  # Set ship reference
+        deck.tiles[y][x].object = weapon
+        print(f"Weapon added to tile: {type(deck.tiles[y][x].object).__name__}")
