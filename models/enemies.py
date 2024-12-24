@@ -79,6 +79,9 @@ class Enemy:
         self.health = max(0, self.health - amount)
         return self.health <= 0 
 
+    def is_dead(self) -> bool:
+        return self.health <= 0
+
 class MeleeEnemy(Enemy):
     def __init__(self, name: str):
         super().__init__(name, EnemyType.MELEE)

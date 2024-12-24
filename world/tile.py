@@ -17,3 +17,26 @@ class Tile:
         if self.object and self.object.solid and not self.object.walkable:
             return False
         return True
+
+    def has_power(self, required_power: float) -> bool:
+        """Check if this tile has enough power for the required amount"""
+        print(f"\nChecking power for tile ({self.x}, {self.y}):")
+        # If there's no cable, there's no power
+        if not self.cable:
+            print("  No cable")
+            return False
+            
+        # Check if the cable is powered and has enough capacity
+        print(f"  Cable powered: {self.cable.powered}")
+        if self.cable.powered and self.cable.network:
+            print(f"  Network available power: {self.cable.network.available_power}")
+            print(f"  Required power: {required_power}")
+            return self.cable.network.available_power >= required_power
+            
+        return False
+
+    def get_available_power(self) -> float:
+        """Get the amount of power available at this tile"""
+        if not self.cable or not self.cable.powered or not self.cable.network:
+            return 0
+        return self.cable.network.available_power

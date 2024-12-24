@@ -6,6 +6,7 @@ from world.objects import Bed, StorageContainer
 from models.crew import CrewMember, Skill
 from models.enemies import RangedEnemy
 from world.items import FoodItem
+from world.weapons import LaserTurret
 
 def create_basic_ship(cable_system=None):
     main_deck = Deck(width=10, height=10, name="Main Deck")
@@ -38,6 +39,11 @@ def create_basic_ship(cable_system=None):
     storage.add_item(FoodItem(quantity=50))
     main_deck.tiles[5][4].object = storage
 
+    # Add a laser turret for defense - moved closer to enemy spawn
+    turret = LaserTurret()
+    main_deck.tiles[6][7].object = turret  # Moved to (6,7) to be within range of (8,8)
+    turret.tile = main_deck.tiles[6][7]
+
     # Create room from all non-wall tiles
     room_tiles = [tile for row in main_deck.tiles for tile in row if not tile.wall]
     room = Room(room_tiles)
@@ -64,7 +70,11 @@ def create_basic_ship(cable_system=None):
 
     # Add enemy in bottom right corner
     enemy = RangedEnemy("Enemy Scout")
-    enemy.x, enemy.y = 8, 8  # Bottom-right area, away from walls
+    enemy.x = 8.0  # Make sure these are floats
+    enemy.y = 8.0
+    enemy.health = 100
+    enemy.max_health = 100
+    print(f"Enemy initialized at ({enemy.x}, {enemy.y}) with health {enemy.health}")
     ship.add_enemy(enemy)
 
     return ship

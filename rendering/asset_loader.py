@@ -27,7 +27,7 @@ class AssetLoader:
         # Add new object images - don't scale them initially
         self._images['bed'] = self.load_and_scale_image('images/bed.png', scale=False)
         self._images['container'] = self.load_and_scale_image('images/container.png', scale=False)
-
+    
     def load_and_scale_image(self, path, scale=True):
         try:
             image = pygame.image.load(path)

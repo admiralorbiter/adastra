@@ -6,7 +6,7 @@ from models.builders.module_builder import ModuleBuilder
 from models.builders.cable_builder import CableBuilder
 from models.builders.object_builder import ObjectBuilder
 from world.modules import LifeSupportModule, ReactorModule, EngineModule, DockingDoorModule
-from world.objects import Bed, StorageContainer, Tank
+from world.objects import Bed, StorageContainer, Tank, LaserTurret
 
 class BuildMode(Enum):
     NONE = auto()
@@ -15,6 +15,7 @@ class BuildMode(Enum):
     CABLE = auto()
     OBJECT = auto()
     MODULE = auto()
+    WEAPON = auto()
 
 class BuildCategory:
     def __init__(self, mode: BuildMode, items: list[BaseBuilder]):
@@ -45,6 +46,9 @@ class BuildSystem:
                 ModuleBuilder("Reactor", "Generates power for the ship", (255, 140, 0), ReactorModule),
                 ModuleBuilder("Engine", "Provides thrust for ship movement", (50, 255, 50), EngineModule),
                 ModuleBuilder("Docking Door", "Allows ships to dock when powered", (150, 150, 150), DockingDoorModule)
+            ]),
+            BuildMode.WEAPON: BuildCategory(BuildMode.WEAPON, [
+                ObjectBuilder("Laser Turret", "Automated defense weapon", (255, 0, 0), LaserTurret)
             ])
         }
         self.active_category: BuildCategory | None = None

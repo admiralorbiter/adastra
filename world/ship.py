@@ -1,4 +1,4 @@
-from world.objects import StorageContainer
+from world.objects import StorageContainer, Weapon
 from world.systems.resource_manager import ResourceManager
 from world.systems.inventory_system import InventorySystem
 from world.systems.crew_manager import CrewManager
@@ -57,19 +57,53 @@ class Ship:
         if dt == 0:  # Skip updates when paused
             return
             
+        print("\n--- Ship Update ---")
+        print(f"Number of enemies: {len(self.enemies)}")
+        for enemy in self.enemies:
+            print(f"Enemy at ({enemy.x}, {enemy.y}) with health {enemy.health}")
+        
+        # Update cable system FIRST to ensure power state is current
+        if self.cable_system:
+            print("\n--- Updating Power Networks ---")
+            self.cable_system.update_networks()
+        
         # Update existing systems
         for deck in self.decks:
             deck.update(dt)
         
         self.crew_manager.update(dt)
         
-        # Update enemies
+        # Update enemies and remove dead ones
+        self.enemies = [enemy for enemy in self.enemies if not enemy.is_dead()]
+        
         for enemy in self.enemies:
             enemy.update(dt)
             
-        if self.cable_system:
-            self.cable_system.update_networks()
         self.resource_manager.update(dt, self)
+
+        # Update weapons and find targets
+        print("\n--- Weapon Updates ---")
+        for deck in self.decks:
+            for y in range(deck.height):
+                for x in range(deck.width):
+                    tile = deck.tiles[y][x]
+                    if isinstance(tile.object, Weapon):
+                        weapon = tile.object
+                        weapon.x = x
+                        weapon.y = y
+                        
+                        # Debug power state
+                        print(f"\nWeapon at ({x},{y}):")
+                        if hasattr(weapon, 'tile'):
+                            cable = weapon.tile.cable
+                            if cable:
+                                print(f"Cable powered: {cable.powered}")
+                                if cable.network:
+                                    print(f"Network power: {cable.network.available_power}")
+                    
+                        if not weapon.target or not weapon.can_attack():
+                            weapon.target = weapon.find_target(self.enemies)
+                        weapon.update(dt)
 
     def add_deck(self, deck):
         """Add a new deck to the ship"""

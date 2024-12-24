@@ -1,13 +1,74 @@
 from world.items import Item, ItemType
+from typing import Optional
+from models.enemies import Enemy
 
 class BaseObject:
-    def __init__(self, name):
+    def __init__(self, name: str):
         self.name = name
         self.solid = False
-        self.walkable = False
+        self.walkable = True
+        self.x = 0
+        self.y = 0
 
     def update(self, dt):
+        """Base update method - override in subclasses if needed"""
         pass
+
+class Weapon(BaseObject):
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.solid = True
+        self.walkable = False
+        self.damage = 0
+        self.range = 0
+        self.attack_cooldown = 1.0
+        self.current_cooldown = 0
+        self.powered = False
+        self.power_required = 2
+        self.target: Optional[Enemy] = None
+
+    def update(self, dt):
+        if not self.powered:
+            return
+            
+        if self.current_cooldown > 0:
+            self.current_cooldown = max(0, self.current_cooldown - dt)
+            
+        if self.target and self.can_attack():
+            self.fire()
+
+    def can_attack(self) -> bool:
+        if self.current_cooldown > 0:
+            return False
+            
+        if not self.target:
+            return False
+            
+        # Check if target is in range
+        dx = self.target.x - self.x
+        dy = self.target.y - self.y
+        distance = (dx ** 2 + dy ** 2) ** 0.5
+        return distance <= self.range
+
+    def fire(self):
+        if self.target and self.can_attack():
+            self.target.take_damage(self.damage)
+            self.current_cooldown = self.attack_cooldown
+
+    def find_target(self, enemies: list[Enemy]) -> Optional[Enemy]:
+        closest_enemy = None
+        closest_distance = float('inf')
+        
+        for enemy in enemies:
+            dx = enemy.x - self.x
+            dy = enemy.y - self.y
+            distance = (dx ** 2 + dy ** 2) ** 0.5
+            
+            if distance <= self.range and distance < closest_distance:
+                closest_enemy = enemy
+                closest_distance = distance
+                
+        return closest_enemy
 
 class Bed(BaseObject):
     def __init__(self):
