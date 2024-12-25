@@ -1,6 +1,7 @@
 from enum import Enum, auto
 from dataclasses import dataclass
 
+from models.builders.object_builder import ObjectBuilder
 from world.modules import (
     LifeSupportModule, 
     ReactorModule, 
@@ -9,6 +10,7 @@ from world.modules import (
 )
 from world.objects import Bed, StorageContainer, Tank
 from world.tile import Tile
+from world.weapons import LaserTurret
 
 class BuildMode(Enum):
     NONE = auto()
@@ -17,6 +19,7 @@ class BuildMode(Enum):
     CABLE = auto()
     OBJECT = auto()
     MODULE = auto()
+    WEAPON = auto()
 
 @dataclass
 class BuildableItem:
@@ -202,6 +205,9 @@ class BuildSystem:
                 BuildableItem("Reactor", "Generates power for the ship", (255, 140, 0)),
                 BuildableItem("Engine", "Provides thrust for ship movement", (50, 255, 50)),
                 BuildableItem("Docking Door", "Allows ships to dock when powered", (150, 150, 150))
+            ]),
+            BuildMode.WEAPON: BuildCategory(BuildMode.WEAPON, [  # Add new WEAPON category
+                ObjectBuilder("Laser Turret", "Automated defense weapon", (255, 0, 0), LaserTurret)
             ])
         }
         self.active_category: BuildCategory | None = None
