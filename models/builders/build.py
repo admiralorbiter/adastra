@@ -174,6 +174,17 @@ class BuildableItem:
             ship.cable_system.add_cable(grid_x, grid_y)
             return True
         
+        # Add Laser Turret placement
+        elif self.name == "Laser Turret":
+            deck = ship.decks[0]  # Get main deck
+            if 0 <= grid_x < deck.width and 0 <= grid_y < deck.height:
+                turret = LaserTurret()
+                deck.tiles[grid_y][grid_x].object = turret
+                turret.tile = deck.tiles[grid_y][grid_x]
+                turret.x = grid_x
+                turret.y = grid_y
+                turret.set_ship(ship)  # Important: Set the ship reference
+                return True
         return False
 
 class BuildCategory:
@@ -206,8 +217,8 @@ class BuildSystem:
                 BuildableItem("Engine", "Provides thrust for ship movement", (50, 255, 50)),
                 BuildableItem("Docking Door", "Allows ships to dock when powered", (150, 150, 150))
             ]),
-            BuildMode.WEAPON: BuildCategory(BuildMode.WEAPON, [  # Add new WEAPON category
-                ObjectBuilder("Laser Turret", "Automated defense weapon", (255, 0, 0), LaserTurret)
+            BuildMode.WEAPON: BuildCategory(BuildMode.WEAPON, [
+                BuildableItem("Laser Turret", "Automated defense weapon", (255, 0, 0))
             ])
         }
         self.active_category: BuildCategory | None = None
@@ -220,7 +231,11 @@ class BuildSystem:
             self.current_mode = mode
             self.active_category = self.categories.get(mode)
             if self.active_category:
-                self.active_category.selected_item = self.active_category.items[0]
+                if mode == BuildMode.WEAPON:
+                    # For weapons, set the selected item when mode is changed
+                    self.active_category.selected_item = self.active_category.items[0]
+                else:
+                    self.active_category.selected_item = self.active_category.items[0]
 
     def get_current_item(self) -> BuildableItem | None:
         if self.active_category:

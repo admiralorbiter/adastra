@@ -46,40 +46,55 @@ class BuildUI:
             self.panel_height
         )
         
+        self.weapon_menu_rect = pygame.Rect(
+            self.x + self.button_size + self.margin * 2,  # Position right of buttons
+            self.y,  # Align with top of panel
+            self.panel_width - (self.button_size + self.margin * 3),  # Fill remaining width
+            self.panel_height
+        )
+        
         self.highlight_color = (100, 200, 255, 128)
         self.selected_item = None
         self.show_object_menu = False
         self.show_module_menu = False
+        self.show_weapon_menu = False
 
     def handle_click(self, pos: tuple[int, int]) -> bool:
-        # Handle main button clicks
+        """Handle mouse click in the build UI"""
+        # Check button clicks first
         for mode, button in self.buttons.items():
             if button.is_clicked(pos):
-                self.build_system.set_mode(mode)
-                button.active = (self.build_system.current_mode == mode)
+                # Clear other menus when switching modes
+                self.show_object_menu = False
+                self.show_weapon_menu = False
                 
-                # Toggle cable visibility when cable mode is selected
-                self.game_state.show_cables = (mode == BuildMode.CABLE and button.active)
-                
-                # Show appropriate menu based on mode
                 if mode == BuildMode.OBJECT:
-                    self.show_object_menu = button.active
-                    self.show_module_menu = False
-                    self.selected_item = None
-                elif mode == BuildMode.MODULE:
-                    self.show_module_menu = button.active
-                    self.show_object_menu = False
-                    self.selected_item = None
+                    self.show_object_menu = True
+                    button.active = True
+                elif mode == BuildMode.WEAPON:
+                    self.show_weapon_menu = True
+                    button.active = True
+                    self.build_system.set_mode(mode)
                 else:
-                    self.show_object_menu = False
-                    self.show_module_menu = False
-                
-                # Deactivate other buttons
-                for other_button in self.buttons.values():
-                    if other_button != button:
-                        other_button.active = False
+                    self.build_system.set_mode(mode)
                 return True
-
+                
+        # Check weapon menu clicks if open
+        if self.show_weapon_menu:
+            category = self.build_system.categories[BuildMode.WEAPON]
+            item_height = 30
+            for i, item in enumerate(category.items):
+                item_rect = pygame.Rect(
+                    self.weapon_menu_rect.x,
+                    self.weapon_menu_rect.y + i * item_height,
+                    self.weapon_menu_rect.width,
+                    item_height
+                )
+                if item_rect.collidepoint(pos):
+                    self.selected_item = item
+                    category.selected_item = item
+                    return True
+                
         # Handle module menu clicks if visible
         if self.show_module_menu:
             category = self.build_system.categories[BuildMode.MODULE]
@@ -246,11 +261,47 @@ class BuildUI:
                 text = font.render(item.name, True, (200, 200, 200))
                 screen.blit(text, (icon_rect.right + 10, item_rect.centery - text.get_height()//2))
 
+        # Draw weapon menu if open
+        if self.show_weapon_menu:
+            # Draw menu background
+            pygame.draw.rect(screen, (40, 40, 40), self.weapon_menu_rect)
+            pygame.draw.rect(screen, (100, 100, 100), self.weapon_menu_rect, 2)
+            
+            # Draw weapon items
+            category = self.build_system.categories[BuildMode.WEAPON]
+            font = pygame.font.Font(None, 24)
+            item_height = 30
+            
+            for i, item in enumerate(category.items):
+                item_rect = pygame.Rect(
+                    self.weapon_menu_rect.x,
+                    self.weapon_menu_rect.y + i * item_height,
+                    self.weapon_menu_rect.width,
+                    item_height
+                )
+                
+                # Highlight selected item
+                if item == category.selected_item:
+                    pygame.draw.rect(screen, (60, 60, 60), item_rect)
+                
+                # Draw item icon
+                icon_rect = pygame.Rect(
+                    item_rect.x + 5,
+                    item_rect.y + 5,
+                    20,
+                    20
+                )
+                pygame.draw.rect(screen, item.icon_color, icon_rect)
+                
+                # Draw item name
+                text = font.render(item.name, True, (200, 200, 200))
+                screen.blit(text, (icon_rect.right + 10, item_rect.centery - text.get_height()//2))
+
     def clear_selection(self):
         """Clear all selections and menus"""
         self.build_system.clear_selection()
         self.show_object_menu = False
-        self.show_module_menu = False
+        self.show_weapon_menu = False
         self.selected_item = None
         # Deactivate all buttons
         for button in self.buttons.values():
